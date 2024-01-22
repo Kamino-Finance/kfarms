@@ -30,6 +30,7 @@ pub fn process(ctx: Context<DepositToFarmVault>, amount: u64) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct DepositToFarmVault<'info> {
+    #[account(address = farm_state.load()?.farm_admin)]
     pub depositor: Signer<'info>,
 
     #[account(mut,

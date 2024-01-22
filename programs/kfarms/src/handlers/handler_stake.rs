@@ -19,6 +19,12 @@ pub fn process(ctx: Context<Stake>, amount: u64) -> Result<()> {
     let scope_price = load_scope_price(&ctx.accounts.scope_prices, farm_state)?;
     let time_unit = farm_state.time_unit;
 
+    let amount = if amount == u64::MAX {
+        ctx.accounts.user_ata.amount
+    } else {
+        amount
+    };
+
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     let StakeEffects { amount_to_stake } = farm_operations::stake(

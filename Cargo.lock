@@ -956,6 +956,7 @@ dependencies = [
  "solana-security-txt",
  "spl-token 3.5.0",
  "static_assertions",
+ "uint",
 ]
 
 [[package]]

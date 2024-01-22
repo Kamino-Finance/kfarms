@@ -17,12 +17,7 @@ use thiserror::Error;
 
 #[cfg(all(
     feature = "mainnet",
-    any(
-        feature = "devnet",
-        feature = "integration_tests",
-        feature = "localnet",
-        feature = "test-bpf",
-    )
+    any(feature = "devnet", feature = "localnet", feature = "test-bpf",)
 ))]
 compile_error!("feature \"mainnet\" is incompatible with any other feature");
 
@@ -76,7 +71,7 @@ pub mod farms {
     pub fn update_farm_config(
         ctx: Context<UpdateFarmConfig>,
         mode: u16,
-        data: [u8; 32],
+        data: Vec<u8>,
     ) -> Result<()> {
         handler_update_farm_config::process(ctx, mode, &data)
     }
@@ -87,6 +82,14 @@ pub mod farms {
 
     pub fn transfer_ownership(ctx: Context<TransferOwnership>, new_owner: Pubkey) -> Result<()> {
         handler_transfer_ownership::process(ctx, new_owner)
+    }
+
+    pub fn reward_user_once(
+        ctx: Context<RewardUserOnce>,
+        reward_index: u64,
+        amount: u64,
+    ) -> Result<()> {
+        handler_reward_user_once::process(ctx, reward_index, amount)
     }
 
     pub fn refresh_farm(ctx: Context<RefreshFarm>) -> Result<()> {

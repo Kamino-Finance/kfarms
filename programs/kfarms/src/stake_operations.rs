@@ -4,7 +4,8 @@ use decimal_wad::decimal::Decimal;
 
 use crate::{
     state::{self, LockingMode},
-    utils::withdrawal_penalty::apply_early_withdrawal_penalty,
+    types::VaultWithdrawEffects,
+    utils::{math::full_decimal_mul_div, withdrawal_penalty::apply_early_withdrawal_penalty},
     xmsg, FarmError,
 };
 
@@ -151,7 +152,7 @@ pub fn convert_stake_to_amount(
     }
 
     let amount_dec = if total_stake != Decimal::zero() {
-        stake * total_amount / total_stake
+        full_decimal_mul_div(stake, total_amount, total_stake)
     } else {
         total_amount.into()
     };
@@ -167,7 +168,7 @@ pub fn convert_amount_to_stake(amount: u64, total_stake: Decimal, total_amount: 
     if amount == 0 {
         return Decimal::zero();
     }
-    if total_amount == 0 {
+    if total_stake == Decimal::zero() || total_amount == 0 {
         assert_eq!(
             total_stake,
             Decimal::zero(),
@@ -392,19 +393,34 @@ pub fn increase_total_amount(
 
 pub fn withdraw_farm(
     farm: &mut impl FarmStakeAccessor,
-    withdraw_amount: u64,
-) -> Result<(), FarmError> {
+    req_withdraw_amount: u64,
+) -> Result<VaultWithdrawEffects, FarmError> {
     let mut farm = farm.get_accessor();
 
     let vault_amount = farm.total_active_amount + farm.total_pending_amount;
 
-    let removed_active_amount = farm.total_active_amount * withdraw_amount / vault_amount;
-    let removed_pending_amount = farm.total_pending_amount * withdraw_amount / vault_amount;
+    if req_withdraw_amount >= vault_amount {
+        farm.total_active_amount = 0;
+        farm.total_pending_amount = 0;
+        xmsg!("Withdraw all farm vault (left frozen): {vault_amount}");
+        return Ok(VaultWithdrawEffects {
+            amount_to_withdraw: vault_amount,
+            farm_to_freeze: true,
+        });
+    }
 
-    let lost_coin = withdraw_amount - removed_active_amount - removed_pending_amount;
+    let removed_active_amount = farm.total_active_amount * req_withdraw_amount / vault_amount;
+    let removed_pending_amount = farm.total_pending_amount * req_withdraw_amount / vault_amount;
 
-    farm.total_active_amount -= removed_active_amount + lost_coin;
+    farm.total_active_amount -= removed_active_amount;
     farm.total_pending_amount -= removed_pending_amount;
 
-    Ok(())
+    let amount_to_withdraw = removed_active_amount + removed_pending_amount;
+
+    xmsg!("Withdraw farm vault: {removed_active_amount} (active) + {removed_pending_amount} (pending) = {amount_to_withdraw} / {req_withdraw_amount}");
+
+    Ok(VaultWithdrawEffects {
+        amount_to_withdraw,
+        farm_to_freeze: false,
+    })
 }

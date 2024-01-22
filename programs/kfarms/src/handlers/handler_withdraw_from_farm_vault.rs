@@ -11,9 +11,15 @@ pub fn process(ctx: Context<WithdrawFromFarmVault>, amount_to_withdraw: u64) -> 
 
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
 
+    require!(
+        farm_state.withdraw_authority != Pubkey::default(),
+        FarmError::UnexpectedAccount
+    );
+
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
-    farm_operations::withdraw_from_farm_vault(farm_state, amount_to_withdraw)?;
+    let final_amount_to_withdraw =
+        farm_operations::withdraw_from_farm_vault(farm_state, amount_to_withdraw)?;
 
     let farm_state_key = ctx.accounts.farm_state.key();
     let signer_seeds: &[&[&[u8]]] = gen_signer_seeds_two!(
@@ -23,7 +29,7 @@ pub fn process(ctx: Context<WithdrawFromFarmVault>, amount_to_withdraw: u64) -> 
     );
 
     token_operations::transfer_from_vault(
-        amount_to_withdraw,
+        final_amount_to_withdraw,
         signer_seeds,
         &ctx.accounts.withdrawer_token_account.to_account_info(),
         &ctx.accounts.farm_vault.to_account_info(),

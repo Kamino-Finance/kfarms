@@ -83,7 +83,9 @@ pub struct FarmState {
 
     pub time_unit: u8,
 
-    pub _padding0: [u8; 7],
+    pub is_farm_frozen: u8,
+
+    pub _padding0: [u8; 6],
 
     pub withdraw_authority: Pubkey,
 
@@ -111,7 +113,8 @@ pub struct FarmState {
     pub scope_oracle_max_age: u64,
 
     pub pending_farm_admin: Pubkey,
-    pub _padding: [u64; 90],
+    pub strategy_id: Pubkey,
+    pub _padding: [u64; 86],
 }
 
 impl FarmState {
@@ -151,10 +154,21 @@ impl FarmState {
         } else {
             let price = scope_price.ok_or(FarmError::MissingScopePrices)?;
             if ts - price.unix_timestamp > self.scope_oracle_max_age {
+                xmsg!(
+                    "ts={} price_ts={} max_age={}",
+                    ts,
+                    price.unix_timestamp,
+                    self.scope_oracle_max_age
+                );
                 return Err(FarmError::ScopeOraclePriceTooOld.into());
             } else {
                 xmsg!("Price: {:?}", price);
-                unadjusted_total * price.price.value / ten_pow(price.price.exp as usize)
+                let unadjusted_total = u128::from(unadjusted_total);
+                let price_value = u128::from(price.price.value);
+                let price_ten_pow = u128::from(ten_pow(price.price.exp as usize));
+                (unadjusted_total * price_value / price_ten_pow)
+                    .try_into()
+                    .unwrap()
             }
         };
         Ok(self.deposit_cap_amount == 0 || final_amount <= self.deposit_cap_amount)
@@ -181,7 +195,9 @@ impl Default for FarmState {
             delegate_authority: Pubkey::default(),
             time_unit: 0,
 
-            _padding0: [0; 7],
+            is_farm_frozen: 0,
+
+            _padding0: [0; 6],
 
             withdraw_authority: Pubkey::default(),
 
@@ -208,7 +224,9 @@ impl Default for FarmState {
             scope_oracle_max_age: u64::MAX,
 
             pending_farm_admin: Pubkey::default(),
-            _padding: [0; 90],
+            strategy_id: Pubkey::default(),
+
+            _padding: [0; 86],
         }
     }
 }
@@ -529,8 +547,9 @@ pub enum FarmConfigOption {
     ScopePricesAccount,
     ScopeOraclePriceId,
     ScopeOracleMaxAge,
-    UpdateRewardScheduleCurvePoint,
+    UpdateRewardScheduleCurvePoints,
     UpdatePendingFarmAdmin,
+    UpdateStrategyId,
 }
 
 #[derive(TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
