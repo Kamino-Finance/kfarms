@@ -1,4 +1,6 @@
-use crate::state::{LockingMode, RewardPerTimeUnitPoint, RewardType, TimeUnit};
+use crate::state::{
+    LockingMode, RewardPerTimeUnitPoint, RewardScheduleCurve, RewardType, TimeUnit,
+};
 use crate::types::{AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects};
 use crate::utils::consts::BPS_DIV_FACTOR;
 use crate::utils::math::ten_pow;
@@ -106,14 +108,19 @@ pub fn update_farm_config(
     farm_state: &mut FarmState,
     scope_price: Option<DatedPrice>,
     mode: FarmConfigOption,
-    data: &[u8; 32],
+    data: &[u8],
 ) -> Result<()> {
+    xmsg!(
+        "farm_operations::update_farm_config mode={:?} with data of len {}",
+        mode,
+        data.len()
+    );
     match mode {
         FarmConfigOption::UpdateRewardRps
         | FarmConfigOption::UpdateRewardMinClaimDuration
         | FarmConfigOption::RewardType
         | FarmConfigOption::RpsDecimals => {
-            let (reward_index, value): (u64, u64) = BorshDeserialize::deserialize(&mut &data[..])?;
+            let (reward_index, value): (u64, u64) = BorshDeserialize::try_from_slice(data)?;
             require!(
                 reward_index < farm_state.num_reward_tokens,
                 FarmError::RewardIndexOutOfRange
@@ -130,7 +137,7 @@ pub fn update_farm_config(
             let reward_info = &mut farm_state.reward_infos[reward_index as usize];
 
             require!(reward_info.is_initialised(), FarmError::NoRewardInList);
-
+            xmsg!("Updating reward index={}", reward_index);
             update_reward_config(
                 reward_info,
                 mode,
@@ -139,8 +146,9 @@ pub fn update_farm_config(
             );
         }
         FarmConfigOption::WithdrawAuthority => {
-            let pubkey: Pubkey = BorshDeserialize::deserialize(&mut &data[..])?;
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config withdraw_authority={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.withdraw_authority);
             farm_state.withdraw_authority = pubkey;
         }
         FarmConfigOption::DepositWarmupPeriod => {
@@ -148,8 +156,9 @@ pub fn update_farm_config(
                 xmsg!("farm_operations::update_farm_config ERROR: delegated farm cannot change deposit_warmup_period");
                 return err!(FarmError::FarmDelegated);
             }
-            let value: u32 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u32 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config deposit_warmup_period={value}",);
+            xmsg!("prev value {:?}", farm_state.deposit_warmup_period);
             farm_state.deposit_warmup_period = value;
         }
         FarmConfigOption::WithdrawCooldownPeriod => {
@@ -157,73 +166,92 @@ pub fn update_farm_config(
                 xmsg!("farm_operations::update_farm_config ERROR: delegated farm cannot change withdrawal_cooldown_period");
                 return err!(FarmError::FarmDelegated);
             }
-            let value: u32 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u32 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config withdrawal_cooldown_period={value}",);
+            xmsg!("prev value {:?}", farm_state.withdrawal_cooldown_period);
             farm_state.withdrawal_cooldown_period = value;
         }
         FarmConfigOption::LockingMode => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config locking_mode={value}",);
+            xmsg!("prev value {:?}", farm_state.locking_mode);
             farm_state.locking_mode = value;
             LockingMode::try_from_primitive(value).unwrap();
         }
         FarmConfigOption::LockingStartTimestamp => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config locking_start_timestamp={value}",);
+            xmsg!("prev value {:?}", farm_state.locking_start_timestamp);
             farm_state.locking_start_timestamp = value;
         }
         FarmConfigOption::LockingEarlyWithdrawalPenaltyBps => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             require_gte!(10000, value, FarmError::InvalidConfigValue);
             xmsg!(
                 "farm_operations::update_farm_config locking_early_withdrawal_penalty_bps={value}",
             );
+            xmsg!(
+                "prev value {:?}",
+                farm_state.locking_early_withdrawal_penalty_bps
+            );
             farm_state.locking_early_withdrawal_penalty_bps = value;
         }
         FarmConfigOption::LockingDuration => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config locking_duration={value}",);
+            xmsg!("prev value {:?}", farm_state.locking_duration);
             farm_state.locking_duration = value;
         }
         FarmConfigOption::DepositCapAmount => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config deposit_cap_amount={value}",);
+            xmsg!("prev value {:?}", farm_state.deposit_cap_amount);
             farm_state.deposit_cap_amount = value;
         }
         FarmConfigOption::SlashedAmountSpillAddress => {
-            let pubkey: Pubkey = BorshDeserialize::deserialize(&mut &data[..])?;
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config slashed_amount_spill_address={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.slashed_amount_spill_address);
             farm_state.slashed_amount_spill_address = pubkey;
         }
         FarmConfigOption::ScopePricesAccount => {
-            let pubkey: Pubkey = BorshDeserialize::deserialize(&mut &data[..])?;
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config scope_prices_account={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.scope_prices);
             farm_state.scope_prices = pubkey;
         }
         FarmConfigOption::ScopeOraclePriceId => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u16 = BorshDeserialize::try_from_slice(&data[..2])?;
             xmsg!("farm_operations::update_farm_config scope_oracle_price_id={value}",);
-            farm_state.scope_oracle_price_id = value;
+            xmsg!("prev value {:?}", farm_state.scope_oracle_price_id);
+            farm_state.scope_oracle_price_id = value.into();
         }
         FarmConfigOption::ScopeOracleMaxAge => {
-            let value: u64 = BorshDeserialize::deserialize(&mut &data[..])?;
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config scope_oracle_max_age={value}",);
+            xmsg!("prev value {:?}", farm_state.scope_oracle_max_age);
             farm_state.scope_oracle_max_age = value;
         }
-        FarmConfigOption::UpdateRewardScheduleCurvePoint => {
-            let (reward_index, point_index, ts_start, rps): (u64, u64, u64, u64) =
-                BorshDeserialize::deserialize(&mut &data[..])?;
+        FarmConfigOption::UpdateRewardScheduleCurvePoints => {
+            let (reward_index, points): (u64, Vec<RewardPerTimeUnitPoint>) =
+                BorshDeserialize::try_from_slice(data)?;
 
             let reward_info = &mut farm_state.reward_infos[reward_index as usize];
-            reward_info.reward_schedule_curve.set_point(
-                point_index as usize,
-                RewardPerTimeUnitPoint::new(ts_start, rps),
-            );
+            xmsg!("Updating reward index={} points={:?}", reward_index, points);
+            xmsg!("Prev value {:?}", reward_info.reward_schedule_curve.points);
+            reward_info.reward_schedule_curve = RewardScheduleCurve::from_points(&points).unwrap();
         }
         FarmConfigOption::UpdatePendingFarmAdmin => {
-            let pubkey: Pubkey = BorshDeserialize::deserialize(&mut &data[..])?;
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config farm_admin={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.pending_farm_admin);
             farm_state.pending_farm_admin = pubkey;
+        }
+        FarmConfigOption::UpdateStrategyId => {
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config strategy_id={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.strategy_id);
+            farm_state.strategy_id = pubkey;
         }
     };
     Ok(())
@@ -244,11 +272,13 @@ pub(crate) fn update_reward_config(
 
     match mode {
         FarmConfigOption::UpdateRewardRps => {
+            xmsg!("prev value {:?}", reward_info.reward_schedule_curve);
             reward_info.reward_schedule_curve.set_constant(value);
             reward_info.last_issuance_ts = ts;
             xmsg!("farm_operations::update_farm_config reward_rps={value} last_issuance_ts={ts}",);
         }
         FarmConfigOption::UpdateRewardMinClaimDuration => {
+            xmsg!("prev value {:?}", reward_info.min_claim_duration_seconds);
             reward_info.min_claim_duration_seconds = value
         }
         FarmConfigOption::RewardType => {
@@ -257,10 +287,12 @@ pub(crate) fn update_reward_config(
                 "farm_operations::update_farm_config reward_type={value} type={:?}",
                 RewardType::try_from_primitive(value).unwrap()
             );
+            xmsg!("prev value {:?}", reward_info.reward_type);
             reward_info.reward_type = value;
         }
         FarmConfigOption::RpsDecimals => {
             let value: u8 = value.try_into().unwrap();
+            xmsg!("prev value {:?}", reward_info.rewards_per_second_decimals);
             xmsg!("farm_operations::update_farm_config rps_decimals={value}",);
             reward_info.rewards_per_second_decimals = value;
         }
@@ -500,6 +532,8 @@ pub fn user_refresh_reward(
         .try_floor()
         .map_err(|_| dbg_msg!(FarmError::IntegerOverflow))?;
 
+    let new_reward_tally = rewards_tally + reward.into();
+
     xmsg!(
         "farm_operations::user_refresh_reward reward {}, new_reward_tally (scaled) {}",
         reward,
@@ -565,6 +599,18 @@ pub fn user_refresh_state(
     Ok(())
 }
 
+pub fn reward_user_once(
+    farm_state: &mut FarmState,
+    user_state: &mut UserState,
+    reward_index: u64,
+    amount: u64,
+) -> Result<()> {
+    farm_state.reward_infos[reward_index as usize].rewards_issued_unclaimed += amount;
+    farm_state.reward_infos[reward_index as usize].rewards_issued_cumulative += amount;
+    user_state.rewards_issued_unclaimed[reward_index as usize] += amount;
+    Ok(())
+}
+
 pub fn unstake(
     farm_state: &mut FarmState,
     user_state: &mut UserState,
@@ -624,11 +670,19 @@ pub fn unstake(
         let reward_tally = &mut user_state.rewards_tally_scaled[i];
         let reward_info = &farm_state.reward_infos[i];
 
-        let mut reward_tally_decimal = Decimal::from_scaled_val(*reward_tally);
+        let reward_tally_decimal = Decimal::from_scaled_val(*reward_tally);
         let tally_loss = stake_share_to_unstake * reward_info.get_reward_per_share_decimal();
-        reward_tally_decimal = reward_tally_decimal - tally_loss;
 
-        *reward_tally = reward_tally_decimal.to_scaled_val().unwrap();
+        require_gt!(
+            reward_tally_decimal + Decimal::one(),
+            tally_loss,
+            FarmError::IntegerOverflow
+        );
+        let reward_tally_scaled: u128 = reward_tally_decimal.to_scaled_val().unwrap();
+        let tally_loss_scaled: u128 = tally_loss.to_scaled_val().unwrap();
+        let new_reward_tally_decimal_scaled = reward_tally_scaled.saturating_sub(tally_loss_scaled);
+
+        *reward_tally = new_reward_tally_decimal_scaled;
     }
 
     Ok(())
@@ -671,27 +725,37 @@ pub fn refresh_global_reward(
     }
 
     let amount: u64 = {
-        let cumulative_amt = reward_info
+        let cumulative_amt = (reward_info
             .reward_schedule_curve
-            .get_cumulative_amount_issued_since_last_ts(reward_info.last_issuance_ts, ts)?;
+            .get_cumulative_amount_issued_since_last_ts(reward_info.last_issuance_ts, ts)?)
+            as u128;
 
         let reward_type_amt = match reward_info.reward_type() {
             RewardType::Proportional => cumulative_amt,
-            RewardType::Constant => cumulative_amt * farm_state.total_staked_amount,
+            RewardType::Constant => cumulative_amt * u128::from(farm_state.total_staked_amount),
         };
 
         let decimal_adjusted_amt =
-            reward_type_amt / ten_pow(reward_info.rewards_per_second_decimals.into());
+            reward_type_amt / u128::from(ten_pow(reward_info.rewards_per_second_decimals.into()));
 
         let oracle_adjusted_amt = if farm_state.scope_oracle_price_id == u64::MAX {
             decimal_adjusted_amt
         } else {
             let price = scope_price.ok_or(FarmError::MissingScopePrices)?;
             if ts - price.unix_timestamp > farm_state.scope_oracle_max_age {
+                xmsg!(
+                    "ts={} price_ts={} max_age={}",
+                    ts,
+                    price.unix_timestamp,
+                    farm_state.scope_oracle_max_age
+                );
                 return Err(FarmError::ScopeOraclePriceTooOld.into());
             } else {
                 xmsg!("Price: {:?}", price);
-                decimal_adjusted_amt * price.price.value / ten_pow(price.price.exp as usize)
+                let decimal_adjusted_amt = decimal_adjusted_amt as u128;
+                let px = price.price.value as u128;
+                let factor = ten_pow(price.price.exp as usize) as u128;
+                decimal_adjusted_amt * px / factor
             }
         };
 
@@ -704,7 +768,7 @@ pub fn refresh_global_reward(
             oracle_adjusted_amt,
         );
 
-        oracle_adjusted_amt
+        oracle_adjusted_amt.try_into().unwrap()
     };
 
     if amount == 0 {
@@ -776,12 +840,18 @@ pub fn deposit_to_farm_vault(farm_state: &mut FarmState, amount: u64) -> Result<
     stake_ops::increase_total_amount(farm_state, amount).map_err(Into::into)
 }
 
-pub fn withdraw_from_farm_vault(farm_state: &mut FarmState, amount: u64) -> Result<()> {
+pub fn withdraw_from_farm_vault(farm_state: &mut FarmState, amount: u64) -> Result<u64> {
     xmsg!(
         "farm_operations::withdraw_from_farm_vault amount={}",
         amount
     );
-    stake_ops::withdraw_farm(farm_state, amount).map_err(Into::into)
+    let res = stake_ops::withdraw_farm(farm_state, amount)?;
+
+    if res.farm_to_freeze {
+        farm_state.is_farm_frozen = true as u8;
+    }
+
+    Ok(res.amount_to_withdraw)
 }
 
 pub fn withdraw_slashed_amount(farm_state: &mut FarmState) -> Result<u64> {

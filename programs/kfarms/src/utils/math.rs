@@ -1,3 +1,16 @@
+use decimal_wad::{
+    common::WAD,
+    decimal::{Decimal, U192},
+};
+
+#[allow(clippy::assign_op_pattern)]
+mod big_ints {
+    use uint::construct_uint;
+    construct_uint! {pub struct U256(4);}
+}
+
+use big_ints::U256;
+
 pub fn ten_pow(x: usize) -> u64 {
     const POWERS_OF_TEN: [u64; 20] = [
         1,
@@ -27,4 +40,41 @@ pub fn ten_pow(x: usize) -> u64 {
     }
 
     POWERS_OF_TEN[x]
+}
+
+impl From<U192> for U256 {
+    fn from(val: U192) -> Self {
+        U256([val.0[0], val.0[1], val.0[2], 0])
+    }
+}
+
+impl TryFrom<U256> for U192 {
+    type Error = ();
+
+    fn try_from(val: U256) -> Result<Self, Self::Error> {
+        if val.0[3] > 0 {
+            Err(())
+        } else {
+            Ok(U192([val.0[0], val.0[1], val.0[2]]))
+        }
+    }
+}
+
+pub fn full_decimal_mul_div(a: Decimal, b: u64, c: Decimal) -> Decimal {
+    let a_scaled: U192 = a.0;
+    let c_scaled: U192 = c.0;
+
+    let a_scaled_bigint: U256 = a_scaled.into();
+    let c_scaled_bigint: U256 = c_scaled.into();
+
+    let wad_big_int: U256 = WAD.into();
+
+    let numerator = a_scaled_bigint * wad_big_int * b;
+    let result_scaled_bigint = numerator / c_scaled_bigint;
+
+    let result_scaled: U192 = result_scaled_bigint
+        .try_into()
+        .expect("full_decimal_mul_div overflow");
+
+    Decimal::from_scaled_val(result_scaled)
 }

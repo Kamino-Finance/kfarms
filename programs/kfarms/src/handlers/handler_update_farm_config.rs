@@ -4,7 +4,7 @@ use crate::utils::scope::load_scope_price;
 use crate::{farm_operations, FarmState};
 use anchor_lang::prelude::*;
 
-pub fn process(ctx: Context<UpdateFarmConfig>, mode: u16, data: &[u8; 32]) -> Result<()> {
+pub fn process(ctx: Context<UpdateFarmConfig>, mode: u16, data: &[u8]) -> Result<()> {
     check_remaining_accounts(&ctx)?;
 
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;

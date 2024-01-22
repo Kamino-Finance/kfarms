@@ -17,3 +17,9 @@ pub struct AddRewardEffects {
 pub struct StakeEffects {
     pub amount_to_stake: u64,
 }
+
+#[derive(Debug)]
+pub struct VaultWithdrawEffects {
+    pub amount_to_withdraw: u64,
+    pub farm_to_freeze: bool,
+}

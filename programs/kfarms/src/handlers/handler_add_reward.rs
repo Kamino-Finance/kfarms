@@ -31,7 +31,12 @@ pub fn process(ctx: Context<AddReward>, amount: u64, reward_index: u64) -> Resul
         TimeUnit::now_from_clock(time_unit, &Clock::get()?),
     )?;
 
-    msg!("add {} to reward {:?}", reward_amount, reward_mint);
+    msg!(
+        "add {} to reward {:?} index {}",
+        reward_amount,
+        reward_mint.key(),
+        reward_index
+    );
 
     token::transfer(
         CpiContext::new(
