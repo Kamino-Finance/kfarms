@@ -3,7 +3,7 @@ use crate::state::{
 };
 use crate::types::{AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects};
 use crate::utils::consts::BPS_DIV_FACTOR;
-use crate::utils::math::ten_pow;
+use crate::utils::math::{ten_pow, u64_mul_div};
 use crate::xmsg;
 use crate::{
     dbg_msg, stake_operations as stake_ops, utils::consts::MAX_REWARDS_TOKENS, FarmConfigOption,
@@ -119,8 +119,9 @@ pub fn update_farm_config(
         FarmConfigOption::UpdateRewardRps
         | FarmConfigOption::UpdateRewardMinClaimDuration
         | FarmConfigOption::RewardType
-        | FarmConfigOption::RpsDecimals => {
-            let (reward_index, value): (u64, u64) = BorshDeserialize::try_from_slice(data)?;
+        | FarmConfigOption::RpsDecimals
+        | FarmConfigOption::UpdateRewardScheduleCurvePoints => {
+            let reward_index: u64 = BorshDeserialize::try_from_slice(&data[..8])?;
             require!(
                 reward_index < farm_state.num_reward_tokens,
                 FarmError::RewardIndexOutOfRange
@@ -141,9 +142,9 @@ pub fn update_farm_config(
             update_reward_config(
                 reward_info,
                 mode,
-                value,
+                &data[8..],
                 TimeUnit::now_from_clock(time_unit, &Clock::get()?),
-            );
+            )?;
         }
         FarmConfigOption::WithdrawAuthority => {
             let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
@@ -232,15 +233,6 @@ pub fn update_farm_config(
             xmsg!("prev value {:?}", farm_state.scope_oracle_max_age);
             farm_state.scope_oracle_max_age = value;
         }
-        FarmConfigOption::UpdateRewardScheduleCurvePoints => {
-            let (reward_index, points): (u64, Vec<RewardPerTimeUnitPoint>) =
-                BorshDeserialize::try_from_slice(data)?;
-
-            let reward_info = &mut farm_state.reward_infos[reward_index as usize];
-            xmsg!("Updating reward index={} points={:?}", reward_index, points);
-            xmsg!("Prev value {:?}", reward_info.reward_schedule_curve.points);
-            reward_info.reward_schedule_curve = RewardScheduleCurve::from_points(&points).unwrap();
-        }
         FarmConfigOption::UpdatePendingFarmAdmin => {
             let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
             xmsg!("farm_operations::update_farm_config farm_admin={pubkey}",);
@@ -260,29 +252,25 @@ pub fn update_farm_config(
 pub(crate) fn update_reward_config(
     reward_info: &mut RewardInfo,
     mode: FarmConfigOption,
-    value: u64,
+    data: &[u8],
     ts: u64,
-) {
-    xmsg!(
-        "farm_operations::update_reward_config mode={:?} value={} ts={}",
-        mode,
-        value,
-        ts
-    );
-
+) -> Result<()> {
     match mode {
         FarmConfigOption::UpdateRewardRps => {
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config reward_rps={value} last_issuance_ts={ts}",);
             xmsg!("prev value {:?}", reward_info.reward_schedule_curve);
             reward_info.reward_schedule_curve.set_constant(value);
             reward_info.last_issuance_ts = ts;
-            xmsg!("farm_operations::update_farm_config reward_rps={value} last_issuance_ts={ts}",);
         }
         FarmConfigOption::UpdateRewardMinClaimDuration => {
-            xmsg!("prev value {:?}", reward_info.min_claim_duration_seconds);
+            let value: u64 = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config reward_min_claim_duration={value}",);
+            xmsg!("prev value {}", reward_info.min_claim_duration_seconds);
             reward_info.min_claim_duration_seconds = value
         }
         FarmConfigOption::RewardType => {
-            let value: u8 = value.try_into().unwrap();
+            let value: u8 = BorshDeserialize::try_from_slice(&data[..1])?;
             xmsg!(
                 "farm_operations::update_farm_config reward_type={value} type={:?}",
                 RewardType::try_from_primitive(value).unwrap()
@@ -291,13 +279,21 @@ pub(crate) fn update_reward_config(
             reward_info.reward_type = value;
         }
         FarmConfigOption::RpsDecimals => {
-            let value: u8 = value.try_into().unwrap();
-            xmsg!("prev value {:?}", reward_info.rewards_per_second_decimals);
+            let value: u8 = BorshDeserialize::try_from_slice(&data[..1])?;
             xmsg!("farm_operations::update_farm_config rps_decimals={value}",);
+            xmsg!("prev value {}", reward_info.rewards_per_second_decimals);
             reward_info.rewards_per_second_decimals = value;
+        }
+        FarmConfigOption::UpdateRewardScheduleCurvePoints => {
+            let points: Vec<RewardPerTimeUnitPoint> = BorshDeserialize::try_from_slice(data)?;
+
+            xmsg!("Updating reward schedule curve with points={:?}", points);
+            xmsg!("Prev value {:?}", reward_info.reward_schedule_curve.points);
+            reward_info.reward_schedule_curve = RewardScheduleCurve::from_points(&points).unwrap();
         }
         _ => unimplemented!(),
     }
+    Ok(())
 }
 
 pub fn initialize_user(
@@ -318,6 +314,10 @@ pub fn initialize_user(
     user_state.rewards_issued_unclaimed = [0; MAX_REWARDS_TOKENS];
     user_state.active_stake_scaled = 0;
     user_state.last_claim_ts = [ts; MAX_REWARDS_TOKENS];
+
+    if farm_state.is_delegated() {
+        user_state.is_farm_delegated = true as u8;
+    }
 
     farm_state.num_users = farm_state
         .num_users
@@ -490,11 +490,7 @@ pub fn harvest(
     user_state.rewards_issued_unclaimed[reward_index] = 0;
     user_state.last_claim_ts[reward_index] = ts;
 
-    let reward_treasury = reward
-        .checked_mul(global_config.treasury_fee_bps)
-        .ok_or_else(|| dbg_msg!(FarmError::IntegerOverflow))?
-        .checked_div(BPS_DIV_FACTOR)
-        .ok_or_else(|| dbg_msg!(FarmError::IntegerOverflow))?;
+    let reward_treasury = u64_mul_div(reward, global_config.treasury_fee_bps, BPS_DIV_FACTOR);
     let reward_user = reward
         .checked_sub(reward_treasury)
         .ok_or_else(|| dbg_msg!(FarmError::IntegerOverflow))?;
@@ -591,6 +587,10 @@ pub fn user_refresh_state(
 ) -> Result<()> {
     refresh_global_rewards(farm_state, scope_price, current_ts)?;
     user_refresh_all_rewards(farm_state, user_state)?;
+
+    let is_delegated = farm_state.is_delegated();
+
+    user_state.is_farm_delegated = is_delegated as u8;
 
     if !farm_state.is_delegated() {
         user_refresh_stake(farm_state, user_state, current_ts)?;
