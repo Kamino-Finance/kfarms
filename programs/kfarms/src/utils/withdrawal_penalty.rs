@@ -1,5 +1,7 @@
 use crate::{xmsg, FarmError};
 
+use super::{consts::BPS_DIV_FACTOR, math::u64_mul_div};
+
 fn get_withdrawal_penalty_bps(
     timestamp_beginning: u64,
     timestamp_now: u64,
@@ -63,7 +65,7 @@ pub fn apply_early_withdrawal_penalty(
         penalty_bps,
     )?;
 
-    let penalty_amount = unstake_amount * penalty_bps / 10000;
+    let penalty_amount = u64_mul_div(unstake_amount, penalty_bps, BPS_DIV_FACTOR);
 
     Ok((unstake_amount - penalty_amount, penalty_amount))
 }

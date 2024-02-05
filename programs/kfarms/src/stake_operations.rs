@@ -5,7 +5,10 @@ use decimal_wad::decimal::Decimal;
 use crate::{
     state::{self, LockingMode},
     types::VaultWithdrawEffects,
-    utils::{math::full_decimal_mul_div, withdrawal_penalty::apply_early_withdrawal_penalty},
+    utils::{
+        math::{full_decimal_mul_div, u64_mul_div},
+        withdrawal_penalty::apply_early_withdrawal_penalty,
+    },
     xmsg, FarmError,
 };
 
@@ -409,8 +412,10 @@ pub fn withdraw_farm(
         });
     }
 
-    let removed_active_amount = farm.total_active_amount * req_withdraw_amount / vault_amount;
-    let removed_pending_amount = farm.total_pending_amount * req_withdraw_amount / vault_amount;
+    let removed_active_amount: u64 =
+        u64_mul_div(farm.total_active_amount, req_withdraw_amount, vault_amount);
+    let removed_pending_amount: u64 =
+        u64_mul_div(farm.total_pending_amount, req_withdraw_amount, vault_amount);
 
     farm.total_active_amount -= removed_active_amount;
     farm.total_pending_amount -= removed_pending_amount;

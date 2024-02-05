@@ -1,6 +1,7 @@
 use decimal_wad::{
     common::WAD,
     decimal::{Decimal, U192},
+    rate::U128,
 };
 
 #[allow(clippy::assign_op_pattern)]
@@ -77,4 +78,13 @@ pub fn full_decimal_mul_div(a: Decimal, b: u64, c: Decimal) -> Decimal {
         .expect("full_decimal_mul_div overflow");
 
     Decimal::from_scaled_val(result_scaled)
+}
+
+pub fn u64_mul_div(a: u64, b: u64, c: u64) -> u64 {
+    let a: U128 = a.into();
+    let b: U128 = b.into();
+
+    let numerator = a * b;
+    let result = numerator / c;
+    result.try_into().expect("u64_mul_div overflow")
 }

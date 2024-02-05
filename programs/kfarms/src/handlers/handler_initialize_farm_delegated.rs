@@ -22,6 +22,7 @@ pub fn process(ctx: Context<InitializeFarmDelegated>) -> Result<()> {
     farm_state.token = TokenInfo::default();
     farm_state.farm_vault = Pubkey::default();
     farm_state.delegate_authority = ctx.accounts.farm_delegate.key();
+    farm_state.is_farm_delegated = true as u8;
 
     msg!(
         "InitializeFarmDelegated {:?} ts {}",

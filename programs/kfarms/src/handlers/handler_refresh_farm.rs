@@ -12,6 +12,8 @@ pub fn process(ctx: Context<RefreshFarm>) -> Result<()> {
     let time_unit = farm_state.time_unit;
     let scope_price = load_scope_price(&ctx.accounts.scope_prices, farm_state)?;
 
+    farm_state.is_farm_delegated = farm_state.is_delegated() as u8;
+
     farm_operations::refresh_global_rewards(
         farm_state,
         scope_price,
