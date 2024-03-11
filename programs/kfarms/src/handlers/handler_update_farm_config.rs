@@ -27,5 +27,5 @@ pub struct UpdateFarmConfig<'info> {
     )]
     pub farm_state: AccountLoader<'info, FarmState>,
 
-    pub scope_prices: Option<AccountInfo<'info>>,
+    pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 }

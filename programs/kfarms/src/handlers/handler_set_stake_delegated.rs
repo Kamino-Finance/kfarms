@@ -3,7 +3,6 @@ use crate::state::TimeUnit;
 use crate::utils::constraints::check_remaining_accounts;
 use crate::{FarmError, FarmState, UserState};
 use anchor_lang::prelude::*;
-use anchor_lang::ToAccountInfo;
 
 pub fn process(ctx: Context<SetStakeDelegated>, new_stake: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;

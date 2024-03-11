@@ -1,57 +1,58 @@
+use crate::farm_operations;
 use crate::state::TimeUnit;
+use crate::types::WithdrawRewardEffects;
 use crate::utils::constraints::check_remaining_accounts;
 use crate::utils::consts::BASE_SEED_FARM_VAULTS_AUTHORITY;
 use crate::utils::scope::load_scope_price;
-use crate::FarmState;
-use crate::{farm_operations, types::AddRewardEffects, FarmError};
+use crate::{gen_signer_seeds_two, token_operations, FarmState};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{Token, TokenAccount};
 
-pub fn process(ctx: Context<AddReward>, amount: u64, reward_index: u64) -> Result<()> {
+pub fn process(ctx: Context<WithdrawReward>, amount: u64, reward_index: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;
 
+    let farm_state_key = ctx.accounts.farm_state.key();
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
     let time_unit = farm_state.time_unit;
-    let reward_mint = &mut ctx.accounts.reward_mint;
+    let reward_mint = ctx.accounts.reward_vault.mint;
     let scope_price = load_scope_price(&ctx.accounts.scope_prices, farm_state)?;
     msg!(
-        "AddReward farm_state {:?} amount {}, reward_index {} ts {}",
+        "WithdrawReward farm_state {:?} amount {}, reward_index {} ts {}",
         ctx.accounts.farm_state.key(),
         amount,
         reward_index,
         TimeUnit::now_from_clock(time_unit, &Clock::get()?)
     );
 
-    let AddRewardEffects { reward_amount } = farm_operations::add_reward(
+    let WithdrawRewardEffects { reward_amount } = farm_operations::withdraw_reward(
         farm_state,
         scope_price,
-        reward_mint.key(),
+        &reward_mint,
         reward_index as usize,
         amount,
         TimeUnit::now_from_clock(time_unit, &Clock::get()?),
     )?;
 
     msg!(
-        "add {} to reward {:?} index {}",
+        "withdraw {} from reward {:?} index {}",
         reward_amount,
         reward_mint.key(),
         reward_index
     );
 
-    token::transfer(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                from: ctx
-                    .accounts
-                    .payer_reward_token_ata
-                    .to_account_info()
-                    .clone(),
-                to: ctx.accounts.reward_vault.to_account_info().clone(),
-                authority: ctx.accounts.payer.to_account_info().clone(),
-            },
-        ),
+    let signer_seeds: &[&[&[u8]]] = gen_signer_seeds_two!(
+        BASE_SEED_FARM_VAULTS_AUTHORITY,
+        farm_state_key,
+        farm_state.farm_vaults_authority_bump as u8
+    );
+
+    token_operations::transfer_from_vault(
         reward_amount,
+        signer_seeds,
+        &ctx.accounts.admin_reward_token_ata.to_account_info(),
+        &ctx.accounts.reward_vault.to_account_info(),
+        &ctx.accounts.farm_vaults_authority,
+        &ctx.accounts.token_program,
     )?;
 
     Ok(())
@@ -59,15 +60,17 @@ pub fn process(ctx: Context<AddReward>, amount: u64, reward_index: u64) -> Resul
 
 #[derive(Accounts)]
 #[instruction(amount: u64, reward_index: u64)]
-pub struct AddReward<'info> {
+pub struct WithdrawReward<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub farm_admin: Signer<'info>,
 
-    #[account(mut)]
+    #[account(mut,
+        has_one = farm_admin,
+        has_one = farm_vaults_authority
+    )]
     pub farm_state: AccountLoader<'info, FarmState>,
 
     #[account(mut,
-        token::mint = reward_mint,
         token::authority = farm_vaults_authority,
         constraint = reward_vault.key() == farm_state.load()?.reward_infos[reward_index as usize].rewards_vault,
     )]
@@ -80,12 +83,9 @@ pub struct AddReward<'info> {
     pub farm_vaults_authority: AccountInfo<'info>,
 
     #[account(mut,
-        constraint = payer_reward_token_ata.mint == reward_mint.key() @ FarmError::RewardAtaRewardMintMissmatch,
-        constraint = payer_reward_token_ata.owner == payer.key() @ FarmError::RewardAtaOwnerNotPayer,
+        token::mint = reward_vault.mint,
     )]
-    pub payer_reward_token_ata: Box<Account<'info, TokenAccount>>,
-
-    pub reward_mint: Account<'info, Mint>,
+    pub admin_reward_token_ata: Box<Account<'info, TokenAccount>>,
 
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 

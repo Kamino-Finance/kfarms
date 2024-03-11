@@ -5,6 +5,7 @@ use crate::{
     xmsg,
 };
 use anchor_lang::prelude::*;
+use bytemuck::{Pod, Zeroable};
 use scope::DatedPrice;
 
 use crate::{
@@ -49,7 +50,9 @@ impl Default for GlobalConfig {
     }
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug,
+)]
 #[repr(u8)]
 pub enum GlobalConfigOption {
     SetPendingGlobalAdmin = 0,
@@ -234,14 +237,16 @@ impl Default for FarmState {
     }
 }
 
-#[zero_copy]
-#[derive(Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[derive(Clone, Copy, Zeroable, Pod, Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[repr(C)]
 pub struct RewardScheduleCurve {
     pub points: [RewardPerTimeUnitPoint; REWARD_CURVE_POINTS],
 }
 
-#[zero_copy]
-#[derive(Debug, Default, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+    Clone, Copy, Zeroable, Pod, Debug, Default, PartialEq, Eq, AnchorSerialize, AnchorDeserialize,
+)]
+#[repr(C)]
 pub struct RewardPerTimeUnitPoint {
     pub ts_start: u64,
     pub reward_per_time_unit: u64,
@@ -493,7 +498,7 @@ impl Default for UserState {
 
 #[zero_copy]
 #[repr(C)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct RewardInfo {
     pub token: TokenInfo,
 
@@ -527,14 +532,24 @@ impl RewardInfo {
 
 #[zero_copy]
 #[repr(C)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct TokenInfo {
     pub mint: Pubkey,
     pub decimals: u64,
     pub _padding: [u64; 10],
 }
 
-#[derive(TryFromPrimitive, IntoPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize,
+    AnchorDeserialize,
+    TryFromPrimitive,
+    IntoPrimitive,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Debug,
+)]
 #[repr(u16)]
 pub enum FarmConfigOption {
     UpdateRewardRps,
@@ -558,21 +573,27 @@ pub enum FarmConfigOption {
     UpdateStrategyId,
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug,
+)]
 #[repr(u8)]
 pub enum TimeUnit {
     Seconds = 0,
     Slots = 1,
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug,
+)]
 #[repr(u8)]
 pub enum RewardType {
     Proportional = 0,
     Constant = 1,
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, TryFromPrimitive, PartialEq, Eq, Clone, Copy, Debug,
+)]
 #[repr(u64)]
 pub enum LockingMode {
     None = 0,

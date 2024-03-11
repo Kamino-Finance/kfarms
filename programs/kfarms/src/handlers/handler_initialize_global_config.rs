@@ -10,8 +10,7 @@ pub fn process(ctx: Context<InitializeGlobalConfig>) -> Result<()> {
     global_config.global_admin = ctx.accounts.global_admin.key();
     global_config.pending_global_admin = ctx.accounts.global_admin.key();
     global_config.treasury_vaults_authority = ctx.accounts.treasury_vaults_authority.key();
-    global_config.treasury_vaults_authority_bump =
-        *ctx.bumps.get("treasury_vaults_authority").unwrap() as u64;
+    global_config.treasury_vaults_authority_bump = ctx.bumps.treasury_vaults_authority.into();
 
     Ok(())
 }
