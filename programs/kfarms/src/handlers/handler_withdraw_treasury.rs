@@ -14,7 +14,7 @@ pub fn process(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
     let signer_seeds: &[&[&[u8]]] = &[&[
         BASE_SEED_TREASURY_VAULTS_AUTHORITY,
         global_config_key.as_ref(),
-        &[*ctx.bumps.get("treasury_vault_authority").unwrap()],
+        &[ctx.bumps.treasury_vault_authority],
     ]];
 
     if amount > 0 {

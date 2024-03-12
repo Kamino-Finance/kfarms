@@ -13,6 +13,10 @@ pub struct AddRewardEffects {
     pub reward_amount: u64,
 }
 
+pub struct WithdrawRewardEffects {
+    pub reward_amount: u64,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct StakeEffects {
     pub amount_to_stake: u64,

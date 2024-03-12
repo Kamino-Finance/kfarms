@@ -1,7 +1,9 @@
 use crate::state::{
     LockingMode, RewardPerTimeUnitPoint, RewardScheduleCurve, RewardType, TimeUnit,
 };
-use crate::types::{AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects};
+use crate::types::{
+    AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects, WithdrawRewardEffects,
+};
 use crate::utils::consts::BPS_DIV_FACTOR;
 use crate::utils::math::{ten_pow, u64_mul_div};
 use crate::xmsg;
@@ -101,6 +103,38 @@ pub fn add_reward(
 
     Ok(AddRewardEffects {
         reward_amount: amount,
+    })
+}
+
+pub fn withdraw_reward(
+    farm_state: &mut FarmState,
+    scope_price: Option<DatedPrice>,
+    mint: &Pubkey,
+    reward_index: usize,
+    amount: u64,
+    ts: u64,
+) -> Result<WithdrawRewardEffects> {
+    xmsg!("farm_operations::withdraw_reward amount={}", amount);
+    require!(amount > 0, FarmError::RewardDoesNotExist);
+    refresh_global_rewards(farm_state, scope_price, ts)?;
+
+    let reward = &mut farm_state.reward_infos[reward_index];
+    require!(reward.token.mint == *mint, FarmError::RewardDoesNotExist);
+    require!(
+        reward.rewards_available > 0,
+        FarmError::WithdrawRewardZeroAvailable
+    );
+    require!(
+        reward.reward_schedule_curve == RewardScheduleCurve::default(),
+        FarmError::RewardScheduleCurveSet
+    );
+
+    let max_withdrawable = cmp::min(reward.rewards_available, amount);
+
+    reward.rewards_available -= max_withdrawable;
+
+    Ok(WithdrawRewardEffects {
+        reward_amount: max_withdrawable,
     })
 }
 

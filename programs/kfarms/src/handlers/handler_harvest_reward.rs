@@ -84,7 +84,7 @@ pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
 }
 
 #[derive(Accounts)]
-#[instruction(reward_index: usize)]
+#[instruction(reward_index: u64)]
 pub struct HarvestReward<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -115,7 +115,7 @@ pub struct HarvestReward<'info> {
         bump,
         constraint = rewards_vault.delegate.is_none() @ FarmError::RewardsVaultHasDelegate,
         constraint = rewards_vault.close_authority.is_none() @ FarmError::RewardsVaultHasCloseAuthority,
-        constraint = rewards_vault.key() == farm_state.load()?.reward_infos[reward_index].rewards_vault @ FarmError::RewardVaultMismatch,
+        constraint = rewards_vault.key() == farm_state.load()?.reward_infos[reward_index as usize].rewards_vault @ FarmError::RewardVaultMismatch,
     )]
     pub rewards_vault: Box<Account<'info, TokenAccount>>,
 
@@ -133,7 +133,7 @@ pub struct HarvestReward<'info> {
     )]
     pub farm_vaults_authority: AccountInfo<'info>,
 
-    pub scope_prices: Option<AccountInfo<'info>>,
+    pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Program<'info, Token>,
 }

@@ -20,19 +20,20 @@ devnet = []
 localnet = []
 mainnet = []
 derive-serde = ["serde"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
-anchor-spl = { version = "0.28.0", features = ["dex", "token", "metadata"] }
-spl-token = { version = "3.5.0", features = ["no-entrypoint"] }
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
+anchor-spl.workspace = true
+spl-token.workspace = true
+decimal-wad.workspace = true
 num-traits = "0.2"
 num-derive = "0.3"
 num_enum = "0.5.0"
-decimal-wad = "0.1.9"
 solana-security-txt = "1.1.1"
 serde = { version = "1.0.134", optional = true }
 static_assertions = "1.1.0"
-scope = { git = "https://github.com/hubbleprotocol/scope", package = "scope-types" }
+scope = { git = "https://github.com/hubbleprotocol/scope", package = "scope-types", branch = "anchor_0.29" }
 bytemuck = { version = "1.4.0", features = ["min_const_generics", "derive"] }
 uint = "0.9.5"
 

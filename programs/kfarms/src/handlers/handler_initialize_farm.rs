@@ -15,7 +15,7 @@ pub fn process(ctx: Context<InitializeFarm>) -> Result<()> {
     farm_state.pending_farm_admin = ctx.accounts.farm_admin.key();
     farm_state.global_config = ctx.accounts.global_config.key();
     farm_state.farm_vaults_authority = ctx.accounts.farm_vaults_authority.key();
-    farm_state.farm_vaults_authority_bump = *ctx.bumps.get("farm_vaults_authority").unwrap() as u64;
+    farm_state.farm_vaults_authority_bump = ctx.bumps.farm_vaults_authority.into();
     farm_state.reward_infos = [RewardInfo::default(); 10];
     farm_state.scope_oracle_price_id = u64::MAX;
 

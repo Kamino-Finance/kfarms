@@ -88,7 +88,7 @@ pub struct Stake<'info> {
     )]
     pub token_mint: Box<Account<'info, Mint>>,
 
-    pub scope_prices: Option<AccountInfo<'info>>,
+    pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Program<'info, Token>,
 }

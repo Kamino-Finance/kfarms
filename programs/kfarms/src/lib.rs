@@ -146,6 +146,25 @@ pub mod farms {
     pub fn update_global_config_admin(ctx: Context<UpdateGlobalConfigAdmin>) -> Result<()> {
         handler_update_global_config_admin::process(ctx)
     }
+
+    pub fn withdraw_reward(
+        ctx: Context<WithdrawReward>,
+        amount: u64,
+        reward_index: u64,
+    ) -> Result<()> {
+        handler_withdraw_reward::process(ctx, amount, reward_index)
+    }
+
+    pub fn idl_missing_types(
+        _ctx: Context<UpdateGlobalConfig>,
+        _global_config_option_kind: GlobalConfigOption,
+        _farm_config_option_kind: FarmConfigOption,
+        _time_unit: TimeUnit,
+        _locking_mode: LockingMode,
+        _reward_type: RewardType,
+    ) -> Result<()> {
+        unreachable!("This should never be called")
+    }
 }
 
 #[error_code]
@@ -207,8 +226,8 @@ pub enum FarmError {
     TokenFarmTokenMintMissmatch,
     #[msg("Reward ata mint is different than reward mint")]
     RewardAtaRewardMintMissmatch,
-    #[msg("Reward ata owner is different than farm admin")]
-    RewardAtaOwnerNotFarmAdmin,
+    #[msg("Reward ata owner is different than payer")]
+    RewardAtaOwnerNotPayer,
     #[msg("Mode to update global_config is invalid")]
     InvalidGlobalConfigMode,
     #[msg("Reward Index is higher than number of rewards")]
@@ -251,6 +270,12 @@ pub enum FarmError {
     InvalidOracleConfig,
     #[msg("Could not deserialize scope")]
     CouldNotDeserializeScope,
+    #[msg("Reward ata owner is different than farm admin")]
+    RewardAtaOwnerNotAdmin,
+    #[msg("Cannot withdraw reward as available amount is zero")]
+    WithdrawRewardZeroAvailable,
+    #[msg("Cannot withdraw reward as reward schedule is set")]
+    RewardScheduleCurveSet,
 }
 
 impl From<DecimalError> for FarmError {

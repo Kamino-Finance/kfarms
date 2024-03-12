@@ -5,9 +5,19 @@ members = [
 
 [profile.release]
 overflow-checks = true
-lto = "fat"
-codegen-units = 1
-[profile.release.build-override]
-opt-level = 3
-incremental = false
-codegen-units = 1
+
+[workspace.dependencies]
+anchor-client = "0.29.0"
+anchor-lang = "0.29.0"
+anchor-spl = { version = "0.29.0", features = ["dex", "token", "metadata"] }
+
+solana-sdk = "1.17.18"
+solana-program-test = "1.17.18"
+
+spl-token = { version = "4.0.0", features = ["no-entrypoint"] }
+spl-associated-token-account = "2.3.0"
+
+decimal-wad = "0.1.9"
+
+[patch.crates-io]
+solana-program-test = { git = "https://github.com/hubbleprotocol/solana.git", branch = "anchor_0.29_compat" }

@@ -13,7 +13,7 @@ pub fn process(ctx: Context<InitializeUser>) -> Result<()> {
     let user_state = &mut ctx.accounts.user_state.load_init()?;
     let payer = ctx.accounts.payer.key();
     let owner = ctx.accounts.owner.key();
-    let user_state_bump = *ctx.bumps.get("user_state").unwrap();
+    let user_state_bump = ctx.bumps.user_state.into();
 
     msg!(
         "InitializeUser: user {} farm {} ts {}",
@@ -46,7 +46,7 @@ pub fn process(ctx: Context<InitializeUser>) -> Result<()> {
         );
     }
 
-    user_state.bump = user_state_bump.into();
+    user_state.bump = user_state_bump;
     user_state.delegatee = ctx.accounts.delegatee.key();
 
     farm_operations::initialize_user(
