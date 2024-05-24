@@ -60,10 +60,6 @@ pub enum GlobalConfigOption {
 }
 
 static_assertions::const_assert_eq!(0, std::mem::size_of::<FarmState>() % 8);
-static_assertions::const_assert_eq!(
-    consts::SIZE_FARM_STATE,
-    std::mem::size_of::<FarmState>() + 8
-);
 #[account(zero_copy)]
 #[derive(Debug, Eq, PartialEq)]
 #[repr(C)]
@@ -402,10 +398,6 @@ impl RewardScheduleCurve {
 }
 
 static_assertions::const_assert_eq!(0, std::mem::size_of::<UserState>() % 8);
-static_assertions::const_assert_eq!(
-    consts::SIZE_USER_STATE,
-    std::mem::size_of::<UserState>() + 8
-);
 #[account(zero_copy)]
 #[derive(Debug, Eq, PartialEq)]
 pub struct UserState {

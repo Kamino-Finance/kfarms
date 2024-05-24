@@ -33,7 +33,7 @@ num_enum = "0.5.0"
 solana-security-txt = "1.1.1"
 serde = { version = "1.0.134", optional = true }
 static_assertions = "1.1.0"
-scope = { git = "https://github.com/hubbleprotocol/scope", package = "scope-types", branch = "anchor_0.29" }
+scope = { git = "https://github.com/Kamino-Finance/scope", package = "scope-types", branch = "anchor_0.29_idl" }
 bytemuck = { version = "1.4.0", features = ["min_const_generics", "derive"] }
 uint = "0.9.5"
 

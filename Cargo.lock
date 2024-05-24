@@ -1768,12 +1768,12 @@ checksum = "98a01dab6acf992653be49205bdd549f32f17cb2803e8eacf1560bf97259aae8"
 [[package]]
 name = "scope-types"
 version = "1.0.0"
-source = "git+https://github.com/hubbleprotocol/scope?branch=anchor_0.29#f997739206b20ebf6b8f5f9c247c7c2fdda49961"
+source = "git+https://github.com/Kamino-Finance/scope?branch=anchor_0.29_idl#0c8f7925aad9f5cf30b6715f2bef0ece9235d87a"
 dependencies = [
  "anchor-lang",
  "bytemuck",
  "cfg-if",
- "num_enum 0.7.1",
+ "num_enum 0.5.11",
  "solana-program",
 ]
 
