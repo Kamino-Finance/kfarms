@@ -4,14 +4,18 @@ use crate::state::TimeUnit;
 use crate::token_operations;
 use crate::types::HarvestEffects;
 use crate::utils::constraints::check_remaining_accounts;
+use crate::utils::constraints::token_2022::validate_reward_token_extensions;
 use crate::utils::consts::*;
 use crate::utils::scope::load_scope_price;
 use crate::{FarmError, FarmState, GlobalConfig, UserState};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Token, TokenAccount};
+use anchor_spl::token_interface::{
+    Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
 
 pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;
+    validate_reward_token_extensions(&ctx.accounts.reward_mint.to_account_info())?;
 
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
     let time_unit = farm_state.time_unit;
@@ -59,24 +63,26 @@ pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
     );
 
     if reward_user > 0 {
-        token_operations::transfer_from_vault(
+        token_operations::transfer_2022_from_vault(
             reward_user,
             signer_seeds,
             &ctx.accounts.user_reward_ata.to_account_info(),
             &ctx.accounts.rewards_vault.to_account_info(),
             &ctx.accounts.farm_vaults_authority,
             &ctx.accounts.token_program,
+            &ctx.accounts.reward_mint.to_account_info(),
         )?;
     }
 
     if reward_treasury > 0 {
-        token_operations::transfer_from_vault(
+        token_operations::transfer_2022_from_vault(
             reward_treasury,
             signer_seeds,
             &ctx.accounts.rewards_treasury_vault.to_account_info(),
             &ctx.accounts.rewards_vault.to_account_info(),
             &ctx.accounts.farm_vaults_authority,
             &ctx.accounts.token_program,
+            &ctx.accounts.reward_mint.to_account_info(),
         )?;
     }
 
@@ -104,11 +110,14 @@ pub struct HarvestReward<'info> {
 
     pub global_config: AccountLoader<'info, GlobalConfig>,
 
+    pub reward_mint: Box<InterfaceAccount<'info, MintInterface>>,
+
     #[account(mut,
         has_one = owner,
-        constraint = user_reward_ata.mint == rewards_vault.mint @ FarmError::UserAtaRewardVaultMintMissmatch,
+        constraint = user_reward_ata.mint == reward_mint.key() @ FarmError::UserAtaRewardVaultMintMissmatch,
+        token::token_program = token_program
     )]
-    pub user_reward_ata: Box<Account<'info, TokenAccount>>,
+    pub user_reward_ata: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut,
         seeds = [BASE_SEED_REWARD_VAULT, farm_state.key().as_ref(), rewards_vault.mint.as_ref()],
@@ -116,16 +125,20 @@ pub struct HarvestReward<'info> {
         constraint = rewards_vault.delegate.is_none() @ FarmError::RewardsVaultHasDelegate,
         constraint = rewards_vault.close_authority.is_none() @ FarmError::RewardsVaultHasCloseAuthority,
         constraint = rewards_vault.key() == farm_state.load()?.reward_infos[reward_index as usize].rewards_vault @ FarmError::RewardVaultMismatch,
+        token::mint = reward_mint,
+        token::token_program = token_program
     )]
-    pub rewards_vault: Box<Account<'info, TokenAccount>>,
+    pub rewards_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut,
         seeds = [BASE_SEED_REWARD_TREASURY_VAULT.as_ref(), global_config.key().as_ref(), rewards_vault.mint.as_ref()],
         bump,
         constraint = rewards_vault.delegate.is_none() @ FarmError::RewardsTreasuryVaultHasDelegate,
         constraint = rewards_vault.close_authority.is_none() @ FarmError::RewardsTreasuryVaultHasCloseAuthority,
+        token::mint = reward_mint,
+        token::token_program = token_program
     )]
-    pub rewards_treasury_vault: Box<Account<'info, TokenAccount>>,
+    pub rewards_treasury_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
@@ -135,5 +148,5 @@ pub struct HarvestReward<'info> {
 
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 }

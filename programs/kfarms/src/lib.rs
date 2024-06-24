@@ -27,11 +27,11 @@ declare_id!("FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr");
 solana_security_txt::security_txt! {
     name: "Kamino Farms",
     project_url: "https://kamino.finance/",
-    contacts: "email:security@hubble.markets",
-    policy: "https://github.com/hubbleprotocol/audits/blob/master/docs/SECURITY.md",
+    contacts: "email:security@kamino.finance",
+    policy: "https://github.com/Kamino-Finance/audits/blob/master/docs/SECURITY.md",
 
        preferred_languages: "en",
-    auditors: "OtterSec (pending), Offside Labs (pending)"
+    auditors: "OtterSec, Offside Labs"
 }
 
 #[program]
@@ -276,6 +276,8 @@ pub enum FarmError {
     WithdrawRewardZeroAvailable,
     #[msg("Cannot withdraw reward as reward schedule is set")]
     RewardScheduleCurveSet,
+    #[msg("Cannot initialize farm while having a mint with token22 and requested extensions")]
+    UnsupportedTokenExtension,
 }
 
 impl From<DecimalError> for FarmError {
