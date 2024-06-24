@@ -536,7 +536,8 @@ impl RewardInfo {
 pub struct TokenInfo {
     pub mint: Pubkey,
     pub decimals: u64,
-    pub _padding: [u64; 10],
+    pub token_program: Pubkey,
+    pub _padding: [u64; 6],
 }
 
 #[derive(

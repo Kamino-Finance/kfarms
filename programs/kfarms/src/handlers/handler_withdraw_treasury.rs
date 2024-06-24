@@ -1,13 +1,18 @@
-use crate::state::GlobalConfig;
-use crate::token_operations;
 use crate::utils::constraints::check_remaining_accounts;
 use crate::utils::consts::*;
 use crate::FarmError;
+use crate::{
+    state::GlobalConfig, utils::constraints::token_2022::validate_reward_token_extensions,
+};
+use crate::{token_operations, xmsg};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token_interface::{
+    Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
 
 pub fn process(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;
+    validate_reward_token_extensions(&ctx.accounts.reward_mint.to_account_info())?;
 
     let global_config_key = ctx.accounts.global_config.key();
 
@@ -18,7 +23,12 @@ pub fn process(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
     ]];
 
     if amount > 0 {
-        token_operations::transfer_from_vault(
+        xmsg!(
+            "WithdrawTreasury amount: {}, available amount: {}",
+            amount,
+            ctx.accounts.reward_treasury_vault.amount
+        );
+        token_operations::transfer_2022_from_vault(
             amount,
             signer_seeds,
             &ctx.accounts
@@ -27,6 +37,7 @@ pub fn process(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
             &ctx.accounts.reward_treasury_vault.to_account_info(),
             &ctx.accounts.treasury_vault_authority,
             &ctx.accounts.token_program,
+            &ctx.accounts.reward_mint.to_account_info(),
         )?;
     } else {
         return Err(FarmError::NothingToWithdraw.into());
@@ -45,13 +56,16 @@ pub struct WithdrawTreasury<'info> {
     )]
     pub global_config: AccountLoader<'info, GlobalConfig>,
 
+    pub reward_mint: Box<InterfaceAccount<'info, MintInterface>>,
+
     #[account(mut,
         seeds = [BASE_SEED_REWARD_TREASURY_VAULT, global_config.key().as_ref(), reward_mint.key().as_ref()],
         bump,
         token::mint = reward_mint,
         token::authority = treasury_vault_authority,
+        token::token_program = token_program
     )]
-    pub reward_treasury_vault: Box<Account<'info, TokenAccount>>,
+    pub reward_treasury_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(
         seeds = [BASE_SEED_TREASURY_VAULTS_AUTHORITY, global_config.key().as_ref()],
@@ -61,10 +75,9 @@ pub struct WithdrawTreasury<'info> {
 
     #[account(mut,
         token::mint = reward_mint,
+        token::token_program = token_program
     )]
-    pub withdraw_destination_token_account: Box<Account<'info, TokenAccount>>,
+    pub withdraw_destination_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
-    pub reward_mint: Box<Account<'info, Mint>>,
-
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
 }

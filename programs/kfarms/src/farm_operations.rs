@@ -58,6 +58,7 @@ pub fn initialize_reward(
     reward_vault: Pubkey,
     mint: Pubkey,
     mint_decimals: u8,
+    mint_token_program: Pubkey,
     ts: u64,
 ) -> Result<()> {
     if farm_state.num_reward_tokens == MAX_REWARDS_TOKENS as u64 {
@@ -71,6 +72,7 @@ pub fn initialize_reward(
 
     reward_info.token.mint = mint;
     reward_info.token.decimals = mint_decimals as u64;
+    reward_info.token.token_program = mint_token_program;
 
     reward_info.last_issuance_ts = ts;
 

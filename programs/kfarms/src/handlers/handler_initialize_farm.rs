@@ -22,7 +22,8 @@ pub fn process(ctx: Context<InitializeFarm>) -> Result<()> {
     farm_state.token = TokenInfo {
         mint: ctx.accounts.token_mint.key(),
         decimals: ctx.accounts.token_mint.decimals as u64,
-        _padding: [0; 10],
+        token_program: ctx.accounts.token_program.key(),
+        _padding: [0; 6],
     };
     farm_state.farm_vault = ctx.accounts.farm_vault.key();
     farm_state.delegate_authority = Pubkey::default();
