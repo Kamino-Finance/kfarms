@@ -14,16 +14,10 @@ pub fn process(ctx: Context<RefreshFarm>) -> Result<()> {
 
     farm_state.is_farm_delegated = farm_state.is_delegated() as u8;
 
-    if farm_state.token.token_program == Pubkey::default() {
-        farm_state.token.token_program = anchor_spl::token::ID;
+    if farm_state.token.token_program == anchor_spl::token::ID && farm_state.is_delegated() {
+        farm_state.token.token_program = Pubkey::default();
     }
 
-    for i in 0..farm_state.num_reward_tokens {
-        let reward_info = &mut farm_state.reward_infos[i as usize];
-        if reward_info.token.token_program == Pubkey::default() {
-            reward_info.token.token_program = anchor_spl::token::ID;
-        }
-    }
     farm_operations::refresh_global_rewards(
         farm_state,
         scope_price,

@@ -297,7 +297,6 @@ pub(crate) fn update_reward_config(
             xmsg!("farm_operations::update_farm_config reward_rps={value} last_issuance_ts={ts}",);
             xmsg!("prev value {:?}", reward_info.reward_schedule_curve);
             reward_info.reward_schedule_curve.set_constant(value);
-            reward_info.last_issuance_ts = ts;
         }
         FarmConfigOption::UpdateRewardMinClaimDuration => {
             let value: u64 = BorshDeserialize::try_from_slice(data)?;
@@ -329,6 +328,8 @@ pub(crate) fn update_reward_config(
         }
         _ => unimplemented!(),
     }
+
+    reward_info.last_issuance_ts = ts;
     Ok(())
 }
 
