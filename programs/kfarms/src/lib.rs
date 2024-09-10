@@ -278,6 +278,8 @@ pub enum FarmError {
     RewardScheduleCurveSet,
     #[msg("Cannot initialize farm while having a mint with token22 and requested extensions")]
     UnsupportedTokenExtension,
+    #[msg("Invalid authority for updating farm config")]
+    InvalidFarmConfigUpdateAuthority,
 }
 
 impl From<DecimalError> for FarmError {

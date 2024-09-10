@@ -7,6 +7,12 @@ pub fn process(ctx: Context<UpdateFarmAdmin>) -> Result<()> {
 
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
 
+    msg!(
+        "Update farm admin prev={:?} new={:?}",
+        farm_state.farm_admin,
+        farm_state.pending_farm_admin
+    );
+
     farm_state.farm_admin = farm_state.pending_farm_admin;
 
     Ok(())

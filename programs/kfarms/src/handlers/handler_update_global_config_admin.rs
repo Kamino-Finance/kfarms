@@ -6,6 +6,12 @@ pub fn process(ctx: Context<UpdateGlobalConfigAdmin>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
     let global_config = &mut ctx.accounts.global_config.load_mut()?;
 
+    msg!(
+        "Update global admin prev={:?} new={:?}",
+        global_config.global_admin,
+        global_config.pending_global_admin
+    );
+
     global_config.global_admin = global_config.pending_global_admin;
 
     Ok(())

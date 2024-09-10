@@ -119,7 +119,9 @@ pub struct FarmState {
 
     pub pending_farm_admin: Pubkey,
     pub strategy_id: Pubkey,
-    pub _padding: [u64; 86],
+
+    pub delegated_rps_admin: Pubkey,
+    pub _padding: [u64; 82],
 }
 
 impl FarmState {
@@ -231,8 +233,9 @@ impl Default for FarmState {
 
             pending_farm_admin: Pubkey::default(),
             strategy_id: Pubkey::default(),
+            delegated_rps_admin: Pubkey::default(),
 
-            _padding: [0; 86],
+            _padding: [0; 82],
         }
     }
 }
@@ -572,6 +575,7 @@ pub enum FarmConfigOption {
     UpdateRewardScheduleCurvePoints,
     UpdatePendingFarmAdmin,
     UpdateStrategyId,
+    UpdateDelegatedRpsAdmin,
 }
 
 #[derive(
