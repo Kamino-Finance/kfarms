@@ -258,10 +258,10 @@ pub fn update_farm_config(
             farm_state.scope_prices = pubkey;
         }
         FarmConfigOption::ScopeOraclePriceId => {
-            let value: u16 = BorshDeserialize::try_from_slice(&data[..2])?;
+            let value: u64 = BorshDeserialize::try_from_slice(&data[..8])?;
             xmsg!("farm_operations::update_farm_config scope_oracle_price_id={value}",);
             xmsg!("prev value {:?}", farm_state.scope_oracle_price_id);
-            farm_state.scope_oracle_price_id = value.into();
+            farm_state.scope_oracle_price_id = value;
         }
         FarmConfigOption::ScopeOracleMaxAge => {
             let value: u64 = BorshDeserialize::try_from_slice(data)?;
@@ -280,6 +280,12 @@ pub fn update_farm_config(
             xmsg!("farm_operations::update_farm_config strategy_id={pubkey}",);
             xmsg!("prev value {:?}", farm_state.strategy_id);
             farm_state.strategy_id = pubkey;
+        }
+        FarmConfigOption::UpdateDelegatedRpsAdmin => {
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config delegated_rps_admin={pubkey}",);
+            xmsg!("prev value {}", farm_state.delegated_rps_admin);
+            farm_state.delegated_rps_admin = pubkey;
         }
     };
     Ok(())
