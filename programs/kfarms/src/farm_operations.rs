@@ -287,6 +287,12 @@ pub fn update_farm_config(
             xmsg!("prev value {}", farm_state.delegated_rps_admin);
             farm_state.delegated_rps_admin = pubkey;
         }
+        FarmConfigOption::UpdateVaultId => {
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config vault_id={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.vault_id);
+            farm_state.vault_id = pubkey;
+        }
     };
     Ok(())
 }

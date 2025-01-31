@@ -38,7 +38,6 @@ pub struct InitializeFarmDelegated<'info> {
     #[account(mut)]
     pub farm_admin: Signer<'info>,
 
-    #[account(mut)]
     pub farm_delegate: Signer<'info>,
 
     #[account(zero)]

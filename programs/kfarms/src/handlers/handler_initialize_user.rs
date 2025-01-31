@@ -62,7 +62,6 @@ pub fn process(ctx: Context<InitializeUser>) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct InitializeUser<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(mut)]
