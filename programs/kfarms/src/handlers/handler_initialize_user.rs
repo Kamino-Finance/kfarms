@@ -39,9 +39,9 @@ pub fn process(ctx: Context<InitializeUser>) -> Result<()> {
             FarmError::UserDelegatedFarmNonDelegatedMissmatch
         );
     } else {
-        require_keys_eq!(
-            farm_state.delegate_authority,
-            ctx.accounts.authority.key(),
+        require!(
+            farm_state.delegate_authority == ctx.accounts.authority.key()
+                || farm_state.second_delegated_authority == ctx.accounts.authority.key(),
             FarmError::AuthorityFarmDelegateMissmatch
         );
     }

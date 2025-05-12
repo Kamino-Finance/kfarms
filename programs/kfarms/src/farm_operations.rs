@@ -293,6 +293,12 @@ pub fn update_farm_config(
             xmsg!("prev value {:?}", farm_state.vault_id);
             farm_state.vault_id = pubkey;
         }
+        FarmConfigOption::UpdateExtraDelegatedAuthority => {
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
+            xmsg!("farm_operations::update_farm_config extra_delegated_authority={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.second_delegated_authority);
+            farm_state.second_delegated_authority = pubkey;
+        }
     };
     Ok(())
 }
