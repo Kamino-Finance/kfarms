@@ -155,6 +155,12 @@ pub mod farms {
         handler_withdraw_reward::process(ctx, amount, reward_index)
     }
 
+    pub fn update_second_delegated_authority(
+        ctx: Context<UpdateSecondDelegatedAuthority>,
+    ) -> Result<()> {
+        handler_update_second_delegated_authority::process(ctx)
+    }
+
     pub fn idl_missing_types(
         _ctx: Context<UpdateGlobalConfig>,
         _global_config_option_kind: GlobalConfigOption,

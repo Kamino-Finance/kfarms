@@ -3,7 +3,7 @@ name = "farms"
 description = "Kamino Farms"
 version = "0.1.0"
 edition = "2021"
-license = "BUSL-1.1"
+license = "Apache-2.0"
 publish = false
 
 [lib]
@@ -36,3 +36,5 @@ static_assertions = "1.1.0"
 scope = { git = "https://github.com/Kamino-Finance/scope.git", package = "scope-types", branch = "anchor_0.29_idl" }
 bytemuck = { version = "1.4.0", features = ["min_const_generics", "derive"] }
 uint = "0.9.5"
+
+

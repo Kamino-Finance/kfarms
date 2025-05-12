@@ -27,7 +27,7 @@ pub fn process(ctx: Context<InitializeFarm>) -> Result<()> {
     };
     farm_state.farm_vault = ctx.accounts.farm_vault.key();
     farm_state.delegate_authority = Pubkey::default();
-
+    farm_state.second_delegated_authority = Pubkey::default();
     msg!(
         "Initialize farm {:?} ts {}",
         ctx.accounts.farm_state.to_account_info().key(),

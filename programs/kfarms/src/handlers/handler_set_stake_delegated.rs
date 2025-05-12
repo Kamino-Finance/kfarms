@@ -11,6 +11,11 @@ pub fn process(ctx: Context<SetStakeDelegated>, new_stake: u64) -> Result<()> {
     let time_unit = farm_state.time_unit;
 
     require!(farm_state.is_delegated(), FarmError::FarmNotDelegated);
+    require!(
+        farm_state.delegate_authority == ctx.accounts.delegate_authority.key()
+            || farm_state.second_delegated_authority == ctx.accounts.delegate_authority.key(),
+        FarmError::AuthorityFarmDelegateMissmatch
+    );
 
     let user_state = &mut ctx.accounts.user_state.load_mut()?;
 
@@ -40,8 +45,6 @@ pub struct SetStakeDelegated<'info> {
     )]
     pub user_state: AccountLoader<'info, UserState>,
 
-    #[account(mut,
-        has_one = delegate_authority,
-    )]
+    #[account(mut)]
     pub farm_state: AccountLoader<'info, FarmState>,
 }
