@@ -23,7 +23,9 @@ pub fn process(ctx: Context<Unstake>, amount: Decimal) -> Result<()> {
         scope_price,
         amount,
         TimeUnit::now_from_clock(time_unit, &Clock::get()?),
-    )
+    )?;
+
+    Ok(())
 }
 
 #[derive(Accounts)]
