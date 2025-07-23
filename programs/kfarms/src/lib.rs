@@ -80,8 +80,8 @@ pub mod farms {
         handler_initialize_user::process(ctx)
     }
 
-    pub fn transfer_ownership(ctx: Context<TransferOwnership>, new_owner: Pubkey) -> Result<()> {
-        handler_transfer_ownership::process(ctx, new_owner)
+    pub fn transfer_ownership(ctx: Context<TransferOwnership>) -> Result<()> {
+        handler_transfer_ownership::process(ctx)
     }
 
     pub fn reward_user_once(
@@ -286,6 +286,18 @@ pub enum FarmError {
     UnsupportedTokenExtension,
     #[msg("Invalid authority for updating farm config")]
     InvalidFarmConfigUpdateAuthority,
+    #[msg("Invalid authority for transfer ownersip new user state initialization")]
+    InvalidTransferOwnershipOldOwner,
+    #[msg("Invalid farm state for transfer ownership new user state initialization")]
+    InvalidTransferOwnershipFarmState,
+    #[msg("Invalid user state for transfer ownership, owner must match delegatee")]
+    InvalidTransferOwnershipUserStateOwnerDelegatee,
+    #[msg("Invalid farm state locking mode for transfer ownership, must be 0")]
+    InvalidTransferOwnershipFarmStateLockingMode,
+    #[msg("Invalid farm state withdrawal cooldown period for transfer ownership, must be 0")]
+    InvalidTransferOwnershipFarmStateWithdrawCooldownPeriod,
+    #[msg("Invalid transfer ownership stake amount, must be equal to unstaked deposits")]
+    InvalidTransferOwnershipStakeAmount,
 }
 
 impl From<DecimalError> for FarmError {
