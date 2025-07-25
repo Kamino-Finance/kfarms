@@ -298,6 +298,8 @@ pub enum FarmError {
     InvalidTransferOwnershipFarmStateWithdrawCooldownPeriod,
     #[msg("Invalid transfer ownership stake amount, must be equal to unstaked deposits")]
     InvalidTransferOwnershipStakeAmount,
+    #[msg("Invalid authority for transfer ownersip new user state initialization")]
+    InvalidTransferOwnershipNewOwner,
 }
 
 impl From<DecimalError> for FarmError {

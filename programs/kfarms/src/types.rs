@@ -27,3 +27,8 @@ pub struct VaultWithdrawEffects {
     pub amount_to_withdraw: u64,
     pub farm_to_freeze: bool,
 }
+
+pub enum AccountLoaderState {
+    Zeroed,
+    Initialized,
+}

@@ -1,7 +1,9 @@
 use crate::farm_operations;
 use crate::state::UserState;
+use crate::types::AccountLoaderState;
 use crate::types::StakeEffects;
 use crate::types::WithdrawEffects;
+use crate::utils::accessors::account_discriminator;
 use crate::utils::constraints::check_remaining_accounts;
 use crate::utils::consts::BASE_SEED_USER_STATE;
 use crate::utils::consts::SIZE_USER_STATE;
@@ -10,6 +12,7 @@ use crate::FarmError;
 use crate::FarmState;
 use crate::TimeUnit;
 use anchor_lang::prelude::*;
+use anchor_lang::Discriminator;
 use anchor_lang::{
     prelude::{msg, Context},
     Key,
@@ -20,7 +23,16 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
 
     let old_user_state = &mut ctx.accounts.old_user_state.load_mut()?;
     let old_user_state_stake = old_user_state.get_active_stake_decimal();
-    let new_user_state = &mut ctx.accounts.new_user_state.load_init()?;
+    let new_user_account_state =
+        if let Ok(UserState::DISCRIMINATOR) = account_discriminator(&ctx.accounts.new_user_state) {
+            AccountLoaderState::Initialized
+        } else {
+            AccountLoaderState::Zeroed
+        };
+    let mut new_user_state = match new_user_account_state {
+        AccountLoaderState::Zeroed => ctx.accounts.new_user_state.load_init()?,
+        AccountLoaderState::Initialized => ctx.accounts.new_user_state.load_mut()?,
+    };
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
     let time_unit = farm_state.time_unit;
     let new_user_state_bump = ctx.bumps.new_user_state.into();
@@ -47,6 +59,24 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
         )
     }
 
+    if matches!(new_user_account_state, AccountLoaderState::Initialized) {
+        require_keys_eq!(
+            new_user_state.delegatee,
+            new_user_state.owner,
+            FarmError::InvalidTransferOwnershipUserStateOwnerDelegatee
+        );
+        require_keys_eq!(
+            new_user_state.owner,
+            ctx.accounts.new_owner.key(),
+            FarmError::InvalidTransferOwnershipNewOwner
+        );
+        require_keys_eq!(
+            new_user_state.farm_state,
+            old_user_state.farm_state,
+            FarmError::InvalidTransferOwnershipFarmState
+        );
+    }
+
     msg!(
         "Transferring stake ownership of user_state {} owned by {} to user_state {} owned by {}",
         ctx.accounts.old_user_state.key(),
@@ -55,16 +85,18 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
         new_owner
     );
 
-    new_user_state.bump = new_user_state_bump;
-    new_user_state.delegatee = ctx.accounts.new_owner.key();
+    if matches!(new_user_account_state, AccountLoaderState::Zeroed) {
+        new_user_state.bump = new_user_state_bump;
+        new_user_state.delegatee = ctx.accounts.new_owner.key();
 
-    farm_operations::initialize_user(
-        farm_state,
-        new_user_state,
-        &new_owner,
-        &ctx.accounts.farm_state.key(),
-        timestamp,
-    )?;
+        farm_operations::initialize_user(
+            farm_state,
+            &mut new_user_state,
+            &new_owner,
+            &ctx.accounts.farm_state.key(),
+            timestamp,
+        )?;
+    }
 
     farm_operations::unstake(
         farm_state,
@@ -79,7 +111,7 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
 
     let StakeEffects { amount_to_stake } = farm_operations::stake(
         farm_state,
-        new_user_state,
+        &mut new_user_state,
         scope_price,
         amount_to_withdraw,
         timestamp,
@@ -113,7 +145,7 @@ pub struct TransferOwnership<'info> {
     #[account(mut)]
     pub old_user_state: AccountLoader<'info, UserState>,
 
-    #[account(init,
+    #[account(init_if_needed,
         seeds = [BASE_SEED_USER_STATE, farm_state.key().as_ref(), new_owner.key().as_ref()],
         bump,
         payer = old_owner,
