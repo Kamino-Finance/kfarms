@@ -40,6 +40,7 @@ pub mod token_2022 {
         ExtensionType::TransferFeeConfig,
         ExtensionType::TokenMetadata,
         ExtensionType::TransferHook,
+        ExtensionType::DefaultAccountState,
     ];
 
 
@@ -80,6 +81,12 @@ pub mod token_2022 {
                         "Transfer hook program id must not be set for base tokens, got {:?}",
                         ext
                     );
+                    return err!(FarmError::UnsupportedTokenExtension);
+                }
+            } else if mint_ext == ExtensionType::DefaultAccountState {
+                let ext = mint.get_extension::<spl_token_2022::extension::default_account_state::DefaultAccountState>()?;
+                if ext.state != spl_token_2022::state::AccountState::Initialized as u8 {
+                    msg!("Default account state extension only supports \"Initialized\" state");
                     return err!(FarmError::UnsupportedTokenExtension);
                 }
             }
