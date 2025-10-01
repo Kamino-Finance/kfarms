@@ -1,20 +1,18 @@
 #![allow(clippy::derivable_impls)]
 
-use crate::{
-    utils::{consts::REWARD_CURVE_POINTS, math::ten_pow},
-    xmsg,
-};
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{Pubkey, *};
 use bytemuck::{Pod, Zeroable};
+use decimal_wad::decimal::Decimal;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use scope::DatedPrice;
 
 use crate::{
-    utils::consts::{self, MAX_REWARDS_TOKENS},
-    FarmError,
+    utils::{
+        consts::{self, MAX_REWARDS_TOKENS, REWARD_CURVE_POINTS},
+        math::ten_pow,
+    },
+    xmsg, FarmError,
 };
-use anchor_lang::prelude::Pubkey;
-use decimal_wad::decimal::Decimal;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 static_assertions::const_assert_eq!(
     consts::SIZE_GLOBAL_CONFIG,
@@ -75,36 +73,58 @@ pub struct FarmState {
     pub reward_infos: [RewardInfo; MAX_REWARDS_TOKENS],
     pub num_reward_tokens: u64,
 
+
     pub num_users: u64,
+
+
     pub total_staked_amount: u64,
 
     pub farm_vault: Pubkey,
     pub farm_vaults_authority: Pubkey,
     pub farm_vaults_authority_bump: u64,
 
+
+
     pub delegate_authority: Pubkey,
+
+
 
     pub time_unit: u8,
 
+
+
     pub is_farm_frozen: u8,
+
+
 
     pub is_farm_delegated: u8,
 
     pub _padding0: [u8; 5],
 
+
+
     pub withdraw_authority: Pubkey,
 
+
+
     pub deposit_warmup_period: u32,
+
     pub withdrawal_cooldown_period: u32,
 
+
     pub total_active_stake_scaled: u128,
+
+
     pub total_pending_stake_scaled: u128,
 
+
     pub total_pending_amount: u64,
+
 
     pub slashed_amount_current: u64,
     pub slashed_amount_cumulative: u64,
     pub slashed_amount_spill_address: Pubkey,
+
 
     pub locking_mode: u64,
     pub locking_start_timestamp: u64,
@@ -159,6 +179,18 @@ impl FarmState {
         scope_price: Option<DatedPrice>,
         ts: u64,
     ) -> Result<bool> {
+       
+       
+       
+       
+       
+
+       
+       
+       
+       
+       
+
         let unadjusted_total = self.total_staked_amount + amount;
         let final_amount = if self.scope_oracle_price_id == u64::MAX {
             unadjusted_total
@@ -196,6 +228,7 @@ impl Default for FarmState {
             reward_infos: [RewardInfo::default(); MAX_REWARDS_TOKENS],
             num_reward_tokens: 0,
 
+           
             num_users: 0,
             total_staked_amount: 0,
 
@@ -211,6 +244,7 @@ impl Default for FarmState {
 
             _padding0: [0; 5],
 
+           
             withdraw_authority: Pubkey::default(),
 
             deposit_warmup_period: 0,
@@ -250,6 +284,15 @@ impl Default for FarmState {
 #[derive(Clone, Copy, Zeroable, Pod, Debug, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 #[repr(C)]
 pub struct RewardScheduleCurve {
+
+
+
+
+
+
+
+
+
     pub points: [RewardPerTimeUnitPoint; REWARD_CURVE_POINTS],
 }
 
@@ -317,8 +360,10 @@ impl RewardScheduleCurve {
     }
 
     pub fn validate(&self) -> Result<()> {
+       
         let pts = &self.points;
 
+       
         let mut last_ts = pts[0].ts_start;
         for pt in pts.iter().skip(1) {
             if pt.ts_start < last_ts {
@@ -328,6 +373,7 @@ impl RewardScheduleCurve {
             last_ts = pt.ts_start;
         }
 
+       
         let mut found_max = false;
         for pt in pts.iter() {
             if pt.ts_start == u64::MAX {
@@ -338,6 +384,7 @@ impl RewardScheduleCurve {
             }
         }
 
+       
         for i in 0..pts.len() - 1 {
             if pts[i].ts_start == pts[i + 1].ts_start && pts[i].ts_start != u64::MAX {
                 msg!("Rps curve points cannot have the same timestamp");
@@ -345,6 +392,7 @@ impl RewardScheduleCurve {
             }
         }
 
+       
         if pts[0].ts_start == u64::MAX {
             msg!("Rps curve points cannot start with a timestamp of u64::MAX");
             return err!(FarmError::InvalidRpsCurvePoint);
@@ -354,8 +402,13 @@ impl RewardScheduleCurve {
     }
 
     fn most_recent_curve_starting_point(&self, last_issued_ts: u64) -> Result<usize> {
+       
+       
         for (i, point) in self.points.iter().enumerate() {
             if point.ts_start > last_issued_ts {
+               
+               
+               
                 return if i > 0 {
                     Ok(i - 1)
                 } else {
@@ -364,6 +417,7 @@ impl RewardScheduleCurve {
                 };
             }
         }
+       
         Ok(self.points.len() - 1)
     }
     pub fn get_cumulative_amount_issued_since_last_ts(
@@ -371,33 +425,46 @@ impl RewardScheduleCurve {
         last_issued_ts: u64,
         current_ts: u64,
     ) -> Result<u64> {
+       
         if last_issued_ts > current_ts {
             msg!("last_issued_ts should be less than current_ts");
             return err!(FarmError::InvalidTimestamp);
         }
 
+       
         let mut cumulative_amount = 0u64;
 
+       
+       
         let start_index = self.most_recent_curve_starting_point(last_issued_ts)?;
 
+       
+       
         for i in start_index..self.points.len() {
             let point = &self.points[i];
             if point.ts_start >= current_ts {
                 break;
             }
 
+           
             let start_ts = if point.ts_start > last_issued_ts {
+               
                 point.ts_start
             } else {
+               
                 last_issued_ts
             };
 
+           
             let end_ts = if i < self.points.len() - 1 && self.points[i + 1].ts_start < current_ts {
+               
                 self.points[i + 1].ts_start
             } else {
+               
                 current_ts
             };
 
+           
             let period_amount = point.reward_per_time_unit * (end_ts - start_ts);
             cumulative_amount += period_amount;
         }
@@ -406,6 +473,8 @@ impl RewardScheduleCurve {
     }
 
     pub fn get_current_rps(&self, current_ts: u64) -> Result<u64> {
+       
+       
         let index = self.most_recent_curve_starting_point(current_ts)?;
         Ok(self.points[index].reward_per_time_unit)
     }
@@ -423,21 +492,36 @@ pub struct UserState {
     pub farm_state: Pubkey,
     pub owner: Pubkey,
 
+
     pub is_farm_delegated: u8,
     pub _padding_0: [u8; 7],
 
+
+
     pub rewards_tally_scaled: [u128; MAX_REWARDS_TOKENS],
+
     pub rewards_issued_unclaimed: [u64; MAX_REWARDS_TOKENS],
     pub last_claim_ts: [u64; MAX_REWARDS_TOKENS],
 
+
+
     pub active_stake_scaled: u128,
 
+
+
     pub pending_deposit_stake_scaled: u128,
+
+
     pub pending_deposit_stake_ts: u64,
 
+
+
     pub pending_withdrawal_unstake_scaled: u128,
+
     pub pending_withdrawal_unstake_ts: u64,
+
     pub bump: u64,
+
     pub delegatee: Pubkey,
 
     pub last_stake_ts: u64,

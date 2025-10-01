@@ -1,6 +1,6 @@
-use crate::utils::constraints::check_remaining_accounts;
-use crate::FarmState;
 use anchor_lang::prelude::*;
+
+use crate::{utils::constraints::check_remaining_accounts, FarmState};
 
 pub fn process(ctx: Context<UpdateFarmAdmin>) -> Result<()> {
     check_remaining_accounts(&ctx)?;

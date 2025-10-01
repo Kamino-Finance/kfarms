@@ -1,9 +1,10 @@
-use crate::state::{GlobalConfig, TimeUnit};
-use crate::state::{RewardInfo, TokenInfo};
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::FarmState;
 use anchor_lang::prelude::*;
+
+use crate::{
+    state::{GlobalConfig, RewardInfo, TimeUnit, TokenInfo},
+    utils::{constraints::check_remaining_accounts, consts::*},
+    FarmState,
+};
 
 pub fn process(ctx: Context<InitializeFarmDelegated>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -19,6 +20,7 @@ pub fn process(ctx: Context<InitializeFarmDelegated>) -> Result<()> {
     farm_state.reward_infos = [RewardInfo::default(); 10];
     farm_state.scope_oracle_price_id = u64::MAX;
 
+   
     farm_state.token = TokenInfo::default();
     farm_state.farm_vault = Pubkey::default();
     farm_state.delegate_authority = ctx.accounts.farm_delegate.key();
@@ -45,6 +47,7 @@ pub struct InitializeFarmDelegated<'info> {
 
     pub global_config: AccountLoader<'info, GlobalConfig>,
 
+    /// CHECK: authority
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,

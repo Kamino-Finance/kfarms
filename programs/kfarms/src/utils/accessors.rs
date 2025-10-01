@@ -1,5 +1,4 @@
-use anchor_lang::prelude::AccountInfo;
-use anchor_lang::{Result, ToAccountInfo};
+use anchor_lang::{prelude::AccountInfo, Result, ToAccountInfo};
 
 pub fn mint_decimals(account: &AccountInfo) -> Result<u8> {
     let bytes = account.try_borrow_data()?;

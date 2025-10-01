@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use scope::DatedPrice;
 
-use crate::state::FarmState;
-use crate::FarmError;
+use crate::{state::FarmState, FarmError};
 
 pub fn load_scope_price(
     scope_prices_account: &Option<AccountLoader<'_, scope::OraclePrices>>,

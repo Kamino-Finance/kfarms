@@ -1,14 +1,19 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::types::WithdrawRewardEffects;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::constraints::token_2022::validate_reward_token_extensions;
-use crate::utils::consts::BASE_SEED_FARM_VAULTS_AUTHORITY;
-use crate::utils::scope::load_scope_price;
-use crate::{gen_signer_seeds_two, token_operations, FarmState};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
+
+use crate::{
+    farm_operations, gen_signer_seeds_two,
+    state::TimeUnit,
+    token_operations,
+    types::WithdrawRewardEffects,
+    utils::{
+        constraints::{check_remaining_accounts, token_2022::validate_reward_token_extensions},
+        consts::BASE_SEED_FARM_VAULTS_AUTHORITY,
+        scope::load_scope_price,
+    },
+    FarmState,
 };
 
 pub fn process(ctx: Context<WithdrawReward>, amount: u64, reward_index: u64) -> Result<()> {
@@ -85,6 +90,7 @@ pub struct WithdrawReward<'info> {
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: authority
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,
@@ -97,6 +103,7 @@ pub struct WithdrawReward<'info> {
     )]
     pub admin_reward_token_ata: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Interface<'info, TokenInterface>,

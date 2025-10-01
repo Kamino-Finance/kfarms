@@ -1,16 +1,19 @@
-use crate::farm_operations;
-use crate::gen_signer_seeds_two;
-use crate::state::TimeUnit;
-use crate::token_operations;
-use crate::types::HarvestEffects;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::constraints::token_2022::validate_reward_token_extensions;
-use crate::utils::consts::*;
-use crate::utils::scope::load_scope_price;
-use crate::{FarmError, FarmState, GlobalConfig, UserState};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
+
+use crate::{
+    farm_operations, gen_signer_seeds_two,
+    state::TimeUnit,
+    token_operations,
+    types::HarvestEffects,
+    utils::{
+        constraints::{check_remaining_accounts, token_2022::validate_reward_token_extensions},
+        consts::*,
+        scope::load_scope_price,
+    },
+    FarmError, FarmState, GlobalConfig, UserState,
 };
 
 pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
@@ -112,6 +115,7 @@ pub struct HarvestReward<'info> {
 
     pub reward_mint: Box<InterfaceAccount<'info, MintInterface>>,
 
+   
     #[account(mut,
         has_one = owner,
         constraint = user_reward_ata.mint == reward_mint.key() @ FarmError::UserAtaRewardVaultMintMissmatch,
@@ -140,12 +144,14 @@ pub struct HarvestReward<'info> {
     )]
     pub rewards_treasury_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: Verified with a has_one constraint in farm state
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,
     )]
     pub farm_vaults_authority: AccountInfo<'info>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Interface<'info, TokenInterface>,

@@ -1,7 +1,8 @@
-use crate::state::UserState;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::{farm_operations, FarmState};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations, state::UserState, utils::constraints::check_remaining_accounts, FarmState,
+};
 
 pub fn process(ctx: Context<RewardUserOnce>, reward_index: u64, amount: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;

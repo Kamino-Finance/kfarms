@@ -1,7 +1,9 @@
-use crate::state::GlobalConfig;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::BASE_SEED_TREASURY_VAULTS_AUTHORITY;
 use anchor_lang::prelude::*;
+
+use crate::{
+    state::GlobalConfig,
+    utils::{constraints::check_remaining_accounts, consts::BASE_SEED_TREASURY_VAULTS_AUTHORITY},
+};
 
 pub fn process(ctx: Context<InitializeGlobalConfig>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -23,6 +25,7 @@ pub struct InitializeGlobalConfig<'info> {
     #[account(zero)]
     pub global_config: AccountLoader<'info, GlobalConfig>,
 
+    /// CHECK: authority
     #[account(
         seeds = [BASE_SEED_TREASURY_VAULTS_AUTHORITY, global_config.key().as_ref()],
         bump,

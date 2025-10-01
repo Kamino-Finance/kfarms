@@ -1,7 +1,6 @@
-use crate::utils::constraints::check_remaining_accounts;
-use crate::FarmState;
-use crate::GlobalConfig;
 use anchor_lang::prelude::*;
+
+use crate::{utils::constraints::check_remaining_accounts, FarmState, GlobalConfig};
 
 pub fn process(ctx: Context<UpdateSecondDelegatedAuthority>) -> Result<()> {
     check_remaining_accounts(&ctx)?;

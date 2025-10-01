@@ -13,13 +13,8 @@ doctest = false
 
 [features]
 no-entrypoint = []
-test-bpf = []
 no-idl = []
 cpi = ["no-entrypoint"]
-devnet = []
-localnet = []
-mainnet = []
-derive-serde = ["serde"]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]

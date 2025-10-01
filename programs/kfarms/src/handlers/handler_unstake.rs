@@ -1,10 +1,12 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::scope::load_scope_price;
-use crate::{FarmError, FarmState, UserState};
 use anchor_lang::prelude::*;
 use decimal_wad::decimal::Decimal;
+
+use crate::{
+    farm_operations,
+    state::TimeUnit,
+    utils::{constraints::check_remaining_accounts, scope::load_scope_price},
+    FarmError, FarmState, UserState,
+};
 
 pub fn process(ctx: Context<Unstake>, amount: Decimal) -> Result<()> {
     require!(amount != Decimal::zero(), FarmError::UnstakeZero);
@@ -15,6 +17,7 @@ pub fn process(ctx: Context<Unstake>, amount: Decimal) -> Result<()> {
     let user_state = &mut ctx.accounts.user_state.load_mut()?;
     let scope_price = load_scope_price(&ctx.accounts.scope_prices, farm_state)?;
 
+   
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     farm_operations::unstake(
@@ -42,5 +45,6 @@ pub struct Unstake<'info> {
     #[account(mut)]
     pub farm_state: AccountLoader<'info, FarmState>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 }

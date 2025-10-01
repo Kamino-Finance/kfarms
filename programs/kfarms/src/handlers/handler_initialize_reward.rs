@@ -1,12 +1,16 @@
-use crate::state::GlobalConfig;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::constraints::token_2022::validate_reward_token_extensions;
-use crate::utils::consts::*;
-use crate::FarmState;
-use crate::{farm_operations, state::TimeUnit};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
+
+use crate::{
+    farm_operations,
+    state::{GlobalConfig, TimeUnit},
+    utils::{
+        constraints::{check_remaining_accounts, token_2022::validate_reward_token_extensions},
+        consts::*,
+    },
+    FarmState,
 };
 
 pub fn process(ctx: Context<InitializeReward>) -> Result<()> {
@@ -26,6 +30,7 @@ pub fn process(ctx: Context<InitializeReward>) -> Result<()> {
         TimeUnit::now_from_clock(time_unit, &Clock::get()?),
     )?;
 
+   
     msg!(
         "InitializeReward {:?} farm_state {:?} ts {}",
         ctx.accounts.reward_mint.key(),
@@ -77,8 +82,10 @@ pub struct InitializeReward<'info> {
     )]
     pub reward_treasury_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: authority
     pub farm_vaults_authority: AccountInfo<'info>,
 
+    /// CHECK: authority
     pub treasury_vaults_authority: AccountInfo<'info>,
 
     pub token_program: Interface<'info, TokenInterface>,

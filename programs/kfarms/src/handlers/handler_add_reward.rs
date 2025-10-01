@@ -1,14 +1,21 @@
-use crate::state::TimeUnit;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::constraints::token_2022::validate_reward_token_extensions;
-use crate::utils::consts::BASE_SEED_FARM_VAULTS_AUTHORITY;
-use crate::utils::scope::load_scope_price;
-use crate::FarmState;
-use crate::{farm_operations, types::AddRewardEffects, FarmError};
 use anchor_lang::prelude::*;
-use anchor_spl::token_2022;
-use anchor_spl::token_interface::{
-    Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+use anchor_spl::{
+    token_2022,
+    token_interface::{
+        Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+    },
+};
+
+use crate::{
+    farm_operations,
+    state::TimeUnit,
+    types::AddRewardEffects,
+    utils::{
+        constraints::{check_remaining_accounts, token_2022::validate_reward_token_extensions},
+        consts::BASE_SEED_FARM_VAULTS_AUTHORITY,
+        scope::load_scope_price,
+    },
+    FarmError, FarmState,
 };
 
 pub fn process(ctx: Context<AddReward>, amount: u64, reward_index: u64) -> Result<()> {
@@ -36,6 +43,7 @@ pub fn process(ctx: Context<AddReward>, amount: u64, reward_index: u64) -> Resul
         TimeUnit::now_from_clock(time_unit, &Clock::get()?),
     )?;
 
+   
     msg!(
         "add {} to reward {:?} index {}",
         reward_amount,
@@ -83,6 +91,7 @@ pub struct AddReward<'info> {
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: authority
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,
@@ -96,6 +105,7 @@ pub struct AddReward<'info> {
     )]
     pub payer_reward_token_ata: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Interface<'info, TokenInterface>,

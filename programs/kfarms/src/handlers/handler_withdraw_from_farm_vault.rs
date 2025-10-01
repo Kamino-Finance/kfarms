@@ -1,10 +1,11 @@
-use crate::farm_operations;
-use crate::token_operations;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::{gen_signer_seeds_two, FarmError, FarmState};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
+
+use crate::{
+    farm_operations, gen_signer_seeds_two, token_operations,
+    utils::{constraints::check_remaining_accounts, consts::*},
+    FarmError, FarmState,
+};
 
 pub fn process(ctx: Context<WithdrawFromFarmVault>, amount_to_withdraw: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -16,6 +17,8 @@ pub fn process(ctx: Context<WithdrawFromFarmVault>, amount_to_withdraw: u64) -> 
         FarmError::UnexpectedAccount
     );
 
+   
+   
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     let final_amount_to_withdraw =
@@ -66,6 +69,7 @@ pub struct WithdrawFromFarmVault<'info> {
     )]
     pub farm_vault: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: Verified with a has_one constraint in farm_state
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,

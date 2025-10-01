@@ -1,8 +1,9 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::{FarmError, FarmState, UserState};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations, state::TimeUnit, utils::constraints::check_remaining_accounts, FarmError,
+    FarmState, UserState,
+};
 
 pub fn process(ctx: Context<SetStakeDelegated>, new_stake: u64) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -10,6 +11,7 @@ pub fn process(ctx: Context<SetStakeDelegated>, new_stake: u64) -> Result<()> {
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
     let time_unit = farm_state.time_unit;
 
+   
     require!(farm_state.is_delegated(), FarmError::FarmNotDelegated);
     require!(
         farm_state.delegate_authority == ctx.accounts.delegate_authority.key()
@@ -18,6 +20,15 @@ pub fn process(ctx: Context<SetStakeDelegated>, new_stake: u64) -> Result<()> {
     );
 
     let user_state = &mut ctx.accounts.user_state.load_mut()?;
+
+   
+   
+   
+   
+   
+   
+   
+   
 
     msg!(
         "SetStakeDelegated: prev:{} -> new:{} ts:{}",
