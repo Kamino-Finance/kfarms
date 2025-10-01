@@ -1,11 +1,12 @@
-use crate::farm_operations;
-use crate::token_operations::transfer_from_user;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::{FarmError, FarmState};
-use anchor_lang::prelude::*;
-use anchor_lang::ToAccountInfo;
+use anchor_lang::{prelude::*, ToAccountInfo};
 use anchor_spl::token::{Token, TokenAccount};
+
+use crate::{
+    farm_operations,
+    token_operations::transfer_from_user,
+    utils::{constraints::check_remaining_accounts, consts::*},
+    FarmError, FarmState,
+};
 
 pub fn process(ctx: Context<DepositToFarmVault>, amount: u64) -> Result<()> {
     require!(amount != 0, FarmError::DepositZero);
@@ -13,6 +14,7 @@ pub fn process(ctx: Context<DepositToFarmVault>, amount: u64) -> Result<()> {
 
     let farm_state = &mut ctx.accounts.farm_state.load_mut()?;
 
+   
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     farm_operations::deposit_to_farm_vault(farm_state, amount)?;

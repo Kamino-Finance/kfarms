@@ -1,21 +1,19 @@
-use crate::farm_operations;
-use crate::state::UserState;
-use crate::types::AccountLoaderState;
-use crate::types::StakeEffects;
-use crate::types::WithdrawEffects;
-use crate::utils::accessors::account_discriminator;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::BASE_SEED_USER_STATE;
-use crate::utils::consts::SIZE_USER_STATE;
-use crate::utils::scope::load_scope_price;
-use crate::FarmError;
-use crate::FarmState;
-use crate::TimeUnit;
-use anchor_lang::prelude::*;
-use anchor_lang::Discriminator;
 use anchor_lang::{
-    prelude::{msg, Context},
-    Key,
+    prelude::{msg, Context, *},
+    Discriminator, Key,
+};
+
+use crate::{
+    farm_operations,
+    state::UserState,
+    types::{AccountLoaderState, StakeEffects, WithdrawEffects},
+    utils::{
+        accessors::account_discriminator,
+        constraints::check_remaining_accounts,
+        consts::{BASE_SEED_USER_STATE, SIZE_USER_STATE},
+        scope::load_scope_price,
+    },
+    FarmError, FarmState, TimeUnit,
 };
 
 pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
@@ -41,17 +39,21 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
     let timestamp = TimeUnit::now_from_clock(time_unit, &Clock::get()?);
 
     {
+       
         require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
         require_keys_eq!(
             old_user_state.delegatee,
             old_user_state.owner,
             FarmError::InvalidTransferOwnershipUserStateOwnerDelegatee
         );
+       
         require_eq!(
             farm_state.locking_mode,
             0,
             FarmError::InvalidTransferOwnershipFarmStateLockingMode
         );
+          
+          
         require_eq!(
             farm_state.withdrawal_cooldown_period,
             0,
@@ -86,6 +88,7 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
     );
 
     if matches!(new_user_account_state, AccountLoaderState::Zeroed) {
+       
         new_user_state.bump = new_user_state_bump;
         new_user_state.delegatee = ctx.accounts.new_owner.key();
 
@@ -98,6 +101,7 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
         )?;
     }
 
+   
     farm_operations::unstake(
         farm_state,
         old_user_state,
@@ -106,9 +110,11 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
         timestamp,
     )?;
 
+   
     let WithdrawEffects { amount_to_withdraw } =
         farm_operations::withdraw_unstaked_deposits(farm_state, old_user_state, timestamp)?;
 
+   
     let StakeEffects { amount_to_stake } = farm_operations::stake(
         farm_state,
         &mut new_user_state,
@@ -140,6 +146,7 @@ pub struct TransferOwnership<'info> {
     )]
     pub old_owner: Signer<'info>,
 
+   
     pub new_owner: AccountInfo<'info>,
 
     #[account(mut)]
@@ -158,6 +165,7 @@ pub struct TransferOwnership<'info> {
     )]
     pub farm_state: AccountLoader<'info, FarmState>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub system_program: Program<'info, System>,

@@ -1,14 +1,16 @@
-use crate::FarmError;
 use anchor_lang::{
     err,
     prelude::{Context, Result},
     Bumps,
 };
 
+use crate::FarmError;
+
 pub fn check_remaining_accounts<T>(ctx: &Context<T>) -> Result<()>
 where
     T: Bumps,
 {
+
     if !ctx.remaining_accounts.is_empty() {
         return err!(FarmError::UnexpectedAccount);
     }
@@ -17,15 +19,18 @@ where
 }
 
 pub mod token_2022 {
-    use crate::FarmError;
-    use anchor_lang::err;
-    use anchor_lang::prelude::msg;
-    use anchor_lang::prelude::{AccountInfo, Pubkey};
-    use anchor_spl::token_2022::spl_token_2022;
-    use anchor_spl::token_interface::spl_token_2022::extension::ExtensionType;
-    use anchor_spl::token_interface::spl_token_2022::extension::{
-        BaseStateWithExtensions, StateWithExtensions,
+    use anchor_lang::{
+        err,
+        prelude::{msg, AccountInfo, Pubkey},
     };
+    use anchor_spl::{
+        token_2022::spl_token_2022,
+        token_interface::spl_token_2022::extension::{
+            BaseStateWithExtensions, ExtensionType, StateWithExtensions,
+        },
+    };
+
+    use crate::FarmError;
     const VALID_BASE_TOKEN_EXTENSIONS: &[ExtensionType] = &[
         ExtensionType::ConfidentialTransferFeeConfig,
         ExtensionType::ConfidentialTransferMint,
@@ -36,6 +41,7 @@ pub mod token_2022 {
         ExtensionType::TokenMetadata,
         ExtensionType::TransferHook,
     ];
+
 
     pub fn validate_reward_token_extensions(
         mint_acc_info: &AccountInfo,

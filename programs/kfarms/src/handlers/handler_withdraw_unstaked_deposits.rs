@@ -1,11 +1,14 @@
-use crate::state::TimeUnit;
-use crate::token_operations;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::{farm_operations, types::WithdrawEffects};
-use crate::{gen_signer_seeds_two, FarmError, FarmState, UserState};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
+
+use crate::{
+    farm_operations, gen_signer_seeds_two,
+    state::TimeUnit,
+    token_operations,
+    types::WithdrawEffects,
+    utils::{constraints::check_remaining_accounts, consts::*},
+    FarmError, FarmState, UserState,
+};
 
 pub fn process(ctx: Context<WithdrawUnstakedDeposits>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -14,6 +17,7 @@ pub fn process(ctx: Context<WithdrawUnstakedDeposits>) -> Result<()> {
     let time_unit = farm_state.time_unit;
     let user_state = &mut ctx.accounts.user_state.load_mut()?;
 
+   
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     let WithdrawEffects { amount_to_withdraw } = farm_operations::withdraw_unstaked_deposits(
@@ -60,6 +64,7 @@ pub struct WithdrawUnstakedDeposits<'info> {
     )]
     pub farm_state: AccountLoader<'info, FarmState>,
 
+   
     #[account(mut,
         has_one = owner,
         constraint = user_ata.mint == farm_state.load()?.token.mint @ FarmError::UserAtaFarmTokenMintMissmatch,
@@ -74,6 +79,7 @@ pub struct WithdrawUnstakedDeposits<'info> {
     )]
     pub farm_vault: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: Verified with a has_one constraint in farm pool state
     #[account(
         seeds = [BASE_SEED_FARM_VAULTS_AUTHORITY, farm_state.key().as_ref()],
         bump,

@@ -1,9 +1,11 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::{FarmError, FarmState, UserState};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations,
+    state::TimeUnit,
+    utils::{constraints::check_remaining_accounts, consts::*},
+    FarmError, FarmState, UserState,
+};
 
 pub fn process(ctx: Context<InitializeUser>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -67,8 +69,10 @@ pub struct InitializeUser<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
+    /// CHECK: This is the owner of the delegatee in case of delegated farms or user itself
     pub owner: AccountInfo<'info>,
 
+    /// CHECK: This is the user_ref in case of delegated farms or the user itself
     pub delegatee: AccountInfo<'info>,
 
     #[account(init,

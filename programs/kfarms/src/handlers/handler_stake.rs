@@ -1,14 +1,14 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::token_operations::transfer_from_user;
-use crate::types::StakeEffects;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::utils::scope::load_scope_price;
-use crate::{FarmError, FarmState, UserState};
-use anchor_lang::prelude::*;
-use anchor_lang::ToAccountInfo;
+use anchor_lang::{prelude::*, ToAccountInfo};
 use anchor_spl::token::{Mint, Token, TokenAccount};
+
+use crate::{
+    farm_operations,
+    state::TimeUnit,
+    token_operations::transfer_from_user,
+    types::StakeEffects,
+    utils::{constraints::check_remaining_accounts, consts::*, scope::load_scope_price},
+    FarmError, FarmState, UserState,
+};
 
 pub fn process(ctx: Context<Stake>, amount: u64) -> Result<()> {
     require!(amount != 0, FarmError::StakeZero);
@@ -20,11 +20,13 @@ pub fn process(ctx: Context<Stake>, amount: u64) -> Result<()> {
     let time_unit = farm_state.time_unit;
 
     let amount = if amount == u64::MAX {
+       
         ctx.accounts.user_ata.amount
     } else {
         amount
     };
 
+   
     require!(!farm_state.is_delegated(), FarmError::FarmDelegated);
 
     let StakeEffects { amount_to_stake } = farm_operations::stake(
@@ -77,6 +79,7 @@ pub struct Stake<'info> {
     )]
     pub farm_vault: Box<Account<'info, TokenAccount>>,
 
+   
     #[account(mut,
         has_one = owner,
         constraint = user_ata.mint == farm_state.load_mut()?.token.mint @ FarmError::UserAtaFarmTokenMintMissmatch,
@@ -88,6 +91,7 @@ pub struct Stake<'info> {
     )]
     pub token_mint: Box<Account<'info, Mint>>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Program<'info, Token>,

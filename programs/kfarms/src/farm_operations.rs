@@ -1,24 +1,27 @@
-use crate::state::{
-    LockingMode, RewardPerTimeUnitPoint, RewardScheduleCurve, RewardType, TimeUnit,
+use std::{
+    cmp,
+    ops::{AddAssign, SubAssign},
 };
-use crate::types::{
-    AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects, WithdrawRewardEffects,
-};
-use crate::utils::consts::BPS_DIV_FACTOR;
-use crate::utils::math::{ten_pow, u64_mul_div};
-use crate::xmsg;
-use crate::{
-    dbg_msg, stake_operations as stake_ops, utils::consts::MAX_REWARDS_TOKENS, FarmConfigOption,
-    FarmError, FarmState, GlobalConfig, GlobalConfigOption, RewardInfo, UserState,
-};
+
 use anchor_lang::prelude::*;
 use borsh::BorshDeserialize;
 use decimal_wad::decimal::Decimal;
 use num_enum::TryFromPrimitive;
-use std::cmp;
-use std::ops::{AddAssign, SubAssign};
-
 pub use scope::{DatedPrice, OraclePrices};
+
+use crate::{
+    dbg_msg, stake_operations as stake_ops,
+    state::{LockingMode, RewardPerTimeUnitPoint, RewardScheduleCurve, RewardType, TimeUnit},
+    types::{
+        AddRewardEffects, HarvestEffects, StakeEffects, WithdrawEffects, WithdrawRewardEffects,
+    },
+    utils::{
+        consts::{BPS_DIV_FACTOR, MAX_REWARDS_TOKENS},
+        math::{ten_pow, u64_mul_div},
+    },
+    xmsg, FarmConfigOption, FarmError, FarmState, GlobalConfig, GlobalConfigOption, RewardInfo,
+    UserState,
+};
 
 pub fn update_global_config(
     global_config: &mut GlobalConfig,
@@ -374,6 +377,7 @@ pub fn initialize_user(
         user_state.is_farm_delegated = true as u8;
     }
 
+   
     farm_state.num_users = farm_state
         .num_users
         .checked_add(1)
@@ -404,11 +408,15 @@ pub fn stake(
     xmsg!("farm_operations::stake amount={}", amount);
     refresh_global_rewards(farm_state, scope_price, current_ts)?;
     user_refresh_all_rewards(farm_state, user_state)?;
+   
     user_refresh_stake(farm_state, user_state, current_ts)?;
 
     if !farm_state.can_accept_deposit(amount, scope_price, current_ts)? {
         return Err(FarmError::DepositCapReached.into());
     }
+
+   
+   
 
     if user_state.pending_deposit_stake_scaled != 0 {
         xmsg!(
@@ -420,6 +428,7 @@ pub fn stake(
     }
 
     if farm_state.deposit_warmup_period > 0 {
+       
         user_state.pending_deposit_stake_ts = current_ts
             .checked_add(farm_state.deposit_warmup_period.into())
             .ok_or_else(|| dbg_msg!(FarmError::IntegerOverflow))?;
@@ -431,6 +440,7 @@ pub fn stake(
             stake_gained
         );
     } else {
+       
         let stake_gained = stake_ops::add_active_stake(user_state, farm_state, amount)?;
         xmsg!(
             "farm_operations::stake AFTER: active_user_stake_scaled={}, active_stake_gained={}",
@@ -447,12 +457,16 @@ pub fn stake(
     })
 }
 
+
 pub fn set_stake(
     farm_state: &mut FarmState,
     user_state: &mut UserState,
     new_stake: u64,
     ts: u64,
 ) -> Result<()> {
+   
+   
+   
     assert_eq!(
         farm_state.total_active_stake_scaled,
         u128::from(farm_state.total_staked_amount)
@@ -472,6 +486,7 @@ pub fn set_stake(
         return Ok(());
     }
 
+   
     refresh_global_rewards(farm_state, None, ts)?;
     user_refresh_all_rewards(farm_state, user_state)?;
 
@@ -480,10 +495,14 @@ pub fn set_stake(
 
     let (diff, op_u64, op_u128): (u64, &OpAssignU64, &OpAssignU128) =
         if current_stake_amount > new_stake {
+           
+           
             let diff = current_stake_amount - new_stake;
 
             (diff, &u64::sub_assign, &u128::sub_assign)
         } else {
+           
+           
             let diff = new_stake - current_stake_amount;
             initialize_reward_ts_if_needed(farm_state, ts);
             user_state.last_stake_ts = ts;
@@ -501,6 +520,7 @@ pub fn set_stake(
 
     op_u128(&mut user_state.active_stake_scaled, diff_u128);
 
+   
     for i in 0..farm_state.num_reward_tokens as usize {
         let reward_tally = &mut user_state.rewards_tally_scaled[i];
         let reward_info = &farm_state.reward_infos[i];
@@ -545,6 +565,8 @@ pub fn harvest(
     user_state.rewards_issued_unclaimed[reward_index] = 0;
     user_state.last_claim_ts[reward_index] = ts;
 
+   
+   
     let reward_treasury = u64_mul_div(reward, global_config.treasury_fee_bps, BPS_DIV_FACTOR);
     let reward_user = reward
         .checked_sub(reward_treasury)
@@ -574,6 +596,7 @@ pub fn user_refresh_reward(
     let reward_per_share = farm_state.reward_infos[reward_index].get_reward_per_share_decimal();
 
     let new_reward_tally: Decimal = if farm_state.is_delegated() {
+       
         reward_per_share * user_state.active_stake_scaled
     } else {
         reward_per_share * user_state.get_active_stake_decimal()
@@ -583,6 +606,7 @@ pub fn user_refresh_reward(
         .try_floor()
         .map_err(|_| dbg_msg!(FarmError::IntegerOverflow))?;
 
+   
     let new_reward_tally = rewards_tally + reward.into();
 
     xmsg!(
@@ -607,6 +631,7 @@ pub fn user_refresh_all_rewards(
             user_refresh_reward(farm_state, user_state, reward_index)?;
         }
     }
+   
 
     Ok(())
 }
@@ -629,8 +654,10 @@ fn user_refresh_stake(
             active_stake_gained.to_scaled_val::<u128>().unwrap()
         );
 
+       
         update_user_rewards_tally_on_stake_increase(farm_state, user_state, active_stake_gained)?;
     }
+   
     Ok(())
 }
 
@@ -645,9 +672,11 @@ pub fn user_refresh_state(
 
     let is_delegated = farm_state.is_delegated();
 
+   
     user_state.is_farm_delegated = is_delegated as u8;
 
     if !farm_state.is_delegated() {
+       
         user_refresh_stake(farm_state, user_state, current_ts)?;
     }
 
@@ -691,6 +720,10 @@ pub fn unstake(
         FarmError::NothingToUnstake
     );
 
+   
+   
+
+   
     if user_state.pending_withdrawal_unstake_scaled > 0 {
         if user_state.pending_withdrawal_unstake_ts <= ts {
             xmsg!("farm_operations::unstake pending withdrawal elapsed already exist but not withdrawn yet");
@@ -718,6 +751,7 @@ pub fn unstake(
         token_amount_removed
     );
 
+   
     farm_state.slashed_amount_current += token_amount_penalty;
     farm_state.slashed_amount_cumulative += token_amount_penalty;
 
@@ -728,6 +762,8 @@ pub fn unstake(
         let reward_tally_decimal = Decimal::from_scaled_val(*reward_tally);
         let tally_loss = stake_share_to_unstake * reward_info.get_reward_per_share_decimal();
 
+       
+       
         require_gt!(
             reward_tally_decimal + Decimal::one(),
             tally_loss,
@@ -775,27 +811,39 @@ pub fn refresh_global_reward(
     }
 
     if farm_state.total_active_stake_scaled == 0 {
+       
+       
         farm_state.reward_infos[reward_index].last_issuance_ts = ts;
         return Ok(());
     }
 
     let amount: u64 = {
+       
         let cumulative_amt = (reward_info
             .reward_schedule_curve
             .get_cumulative_amount_issued_since_last_ts(reward_info.last_issuance_ts, ts)?)
             as u128;
 
+       
+       
         let reward_type_amt = match reward_info.reward_type() {
             RewardType::Proportional => cumulative_amt,
-            RewardType::Constant => cumulative_amt * u128::from(farm_state.total_staked_amount),
+            RewardType::Constant => {
+                cumulative_amt * u128::from(farm_state.total_staked_amount)
+            }
         };
 
         let decimal_adjusted_amt =
             reward_type_amt / u128::from(ten_pow(reward_info.rewards_per_second_decimals.into()));
 
+       
         let oracle_adjusted_amt = if farm_state.scope_oracle_price_id == u64::MAX {
             decimal_adjusted_amt
         } else {
+           
+           
+           
+           
             let price = scope_price.ok_or(FarmError::MissingScopePrices)?;
             if ts - price.unix_timestamp > farm_state.scope_oracle_max_age {
                 xmsg!(
@@ -810,6 +858,7 @@ pub fn refresh_global_reward(
                 let decimal_adjusted_amt = decimal_adjusted_amt as u128;
                 let px = price.price.value as u128;
                 let factor = ten_pow(price.price.exp as usize) as u128;
+               
                 decimal_adjusted_amt * px / factor
             }
         };
@@ -827,6 +876,8 @@ pub fn refresh_global_reward(
     };
 
     if amount == 0 {
+       
+       
         return Ok(());
     }
 
@@ -858,11 +909,13 @@ pub fn refresh_global_reward(
         .checked_sub(rewards)
         .ok_or_else(|| dbg_msg!(FarmError::IntegerOverflow))?;
 
+   
     {
         let mut reward_per_share =
             farm_state.reward_infos[reward_index].get_reward_per_share_decimal();
 
         let added_reward_per_share = if farm_state.is_delegated() {
+           
             Decimal::from(rewards) / farm_state.total_active_stake_scaled
         } else {
             Decimal::from(rewards) / farm_state.get_total_active_stake_decimal()
@@ -895,6 +948,7 @@ pub fn deposit_to_farm_vault(farm_state: &mut FarmState, amount: u64) -> Result<
     stake_ops::increase_total_amount(farm_state, amount).map_err(Into::into)
 }
 
+
 pub fn withdraw_from_farm_vault(farm_state: &mut FarmState, amount: u64) -> Result<u64> {
     xmsg!(
         "farm_operations::withdraw_from_farm_vault amount={}",
@@ -914,6 +968,7 @@ pub fn withdraw_slashed_amount(farm_state: &mut FarmState) -> Result<u64> {
     farm_state.slashed_amount_current = 0;
     Ok(amount)
 }
+
 fn update_user_rewards_tally_on_stake_increase(
     farm_state: &mut FarmState,
     user_state: &mut UserState,

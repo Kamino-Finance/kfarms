@@ -1,8 +1,7 @@
+use super::{consts::BPS_DIV_FACTOR, math::u64_mul_div};
 use crate::{xmsg, FarmError};
 
-use super::{consts::BPS_DIV_FACTOR, math::u64_mul_div};
-
-fn get_withdrawal_penalty_bps(
+pub(crate) fn get_withdrawal_penalty_bps(
     timestamp_beginning: u64,
     timestamp_now: u64,
     timestamp_maturity: u64,
@@ -12,6 +11,8 @@ fn get_withdrawal_penalty_bps(
         return Err(FarmError::InvalidLockingTimestamps);
     }
 
+   
+   
     if timestamp_now < timestamp_beginning {
         xmsg!(
             "timestamp_now < timestamp_beginning where the user withdraws before
@@ -20,6 +21,7 @@ fn get_withdrawal_penalty_bps(
         return Ok(0);
     }
 
+   
     if timestamp_now >= timestamp_maturity {
         xmsg!(
             "Time has passed, can unstake as usual ts_now={:?} ts_maturity={:?}",
@@ -34,15 +36,21 @@ fn get_withdrawal_penalty_bps(
         return Err(FarmError::InvalidPenaltyPercentage);
     }
 
+   
+   
+   
     if penalty_bps == 0 || penalty_bps == 10000 {
         xmsg!("Penalty percentage is 0 or 100, therefore early withdrawal is not allowed");
         return Err(FarmError::EarlyWithdrawalNotAllowed);
     }
 
+   
     let time_remaining = timestamp_maturity - timestamp_now;
 
+   
     let total_duration = timestamp_maturity - timestamp_beginning;
 
+   
     let penalty = penalty_bps * time_remaining / total_duration;
 
     Ok(penalty)

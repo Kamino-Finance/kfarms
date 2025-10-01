@@ -1,3 +1,140 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use std::ops::{Deref, DerefMut};
 
 use decimal_wad::decimal::Decimal;
@@ -11,6 +148,8 @@ use crate::{
     },
     xmsg, FarmError,
 };
+
+
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
 pub struct UserStake {
@@ -53,6 +192,7 @@ impl<T: UserStakeAccessor> Drop for UserStakeAbstract<'_, T> {
         self.src_ref.update(self.internal);
     }
 }
+
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
 pub struct FarmStake {
@@ -98,6 +238,8 @@ impl<T: FarmStakeAccessor> Drop for FarmStakeAbstract<'_, T> {
         self.src_ref.update(self.internal);
     }
 }
+
+
 
 impl UserStakeAccessor for state::UserState {
     fn get_accessor(&mut self) -> UserStakeAbstract<'_, Self> {
@@ -157,6 +299,10 @@ pub fn convert_stake_to_amount(
     let amount_dec = if total_stake != Decimal::zero() {
         full_decimal_mul_div(stake, total_amount, total_stake)
     } else {
+       
+       
+       
+       
         total_amount.into()
     };
 
@@ -167,11 +313,15 @@ pub fn convert_stake_to_amount(
     }
 }
 
+
+
 pub fn convert_amount_to_stake(amount: u64, total_stake: Decimal, total_amount: u64) -> Decimal {
     if amount == 0 {
         return Decimal::zero();
     }
     if total_stake == Decimal::zero() || total_amount == 0 {
+       
+       
         assert_eq!(
             total_stake,
             Decimal::zero(),
@@ -182,6 +332,8 @@ pub fn convert_amount_to_stake(amount: u64, total_stake: Decimal, total_amount: 
         total_stake * amount / total_amount
     }
 }
+
+
 
 pub fn add_pending_deposit_stake(
     user_stake: &mut impl UserStakeAccessor,
@@ -205,6 +357,7 @@ pub fn add_pending_deposit_stake(
     Ok(user_gained_pending_stake)
 }
 
+
 pub fn remove_pending_deposit_stake(
     user_stake: &mut impl UserStakeAccessor,
     farm: &mut impl FarmStakeAccessor,
@@ -212,6 +365,9 @@ pub fn remove_pending_deposit_stake(
     let mut user_stake = user_stake.get_accessor();
     let mut farm = farm.get_accessor();
 
+   
+   
+   
     let pending_amount_removed: u64 = convert_stake_to_amount(
         user_stake.pending_deposit_stake,
         farm.total_pending_stake,
@@ -227,6 +383,8 @@ pub fn remove_pending_deposit_stake(
 
     Ok(pending_amount_removed)
 }
+
+
 
 pub fn add_active_stake(
     user_stake: &mut impl UserStakeAccessor,
@@ -250,6 +408,8 @@ pub fn add_active_stake(
     Ok(user_gained_active_stake)
 }
 
+
+
 pub fn activate_pending_stake(
     user_stake: &mut impl UserStakeAccessor,
     farm: &mut impl FarmStakeAccessor,
@@ -259,6 +419,8 @@ pub fn activate_pending_stake(
     Ok((amount_to_stake, gained_active_stake))
 }
 
+
+
 pub fn remove_active_stake(
     user_stake: &mut impl UserStakeAccessor,
     farm: &mut impl FarmStakeAccessor,
@@ -267,6 +429,7 @@ pub fn remove_active_stake(
     let mut user_stake = user_stake.get_accessor();
     let mut farm = farm.get_accessor();
 
+   
     assert!(
         unstaked_shares <= user_stake.active_stake,
         "Not enough active stake ({}) to perform this unstake ({} requested)",
@@ -274,6 +437,7 @@ pub fn remove_active_stake(
         unstaked_shares
     );
 
+   
     let unstaked_amount: u64 = convert_stake_to_amount(
         unstaked_shares,
         farm.total_active_stake,
@@ -288,6 +452,8 @@ pub fn remove_active_stake(
 
     Ok(unstaked_amount)
 }
+
+
 
 pub fn add_pending_withdrawal_stake(
     user_stake: &mut impl UserStakeAccessor,
@@ -311,6 +477,8 @@ pub fn add_pending_withdrawal_stake(
 
     Ok(user_gained_pending_stake)
 }
+
+
 
 pub fn unstake(
     user_stake: &mut impl UserStakeAccessor,
@@ -362,6 +530,8 @@ pub fn unstake(
     ))
 }
 
+
+
 pub fn remove_pending_withdrawal_stake(
     user_stake: &mut impl UserStakeAccessor,
     farm: &mut impl FarmStakeAccessor,
@@ -369,6 +539,7 @@ pub fn remove_pending_withdrawal_stake(
     let mut user_stake = user_stake.get_accessor();
     let mut farm = farm.get_accessor();
 
+   
     let pending_amount_removed: u64 = convert_stake_to_amount(
         user_stake.pending_withdrawal_unstake,
         farm.total_pending_stake,
@@ -384,6 +555,8 @@ pub fn remove_pending_withdrawal_stake(
     Ok(pending_amount_removed)
 }
 
+
+
 pub fn increase_total_amount(
     farm: &mut impl FarmStakeAccessor,
     amount: u64,
@@ -394,6 +567,8 @@ pub fn increase_total_amount(
     Ok(())
 }
 
+
+
 pub fn withdraw_farm(
     farm: &mut impl FarmStakeAccessor,
     req_withdraw_amount: u64,
@@ -403,6 +578,7 @@ pub fn withdraw_farm(
     let vault_amount = farm.total_active_amount + farm.total_pending_amount;
 
     if req_withdraw_amount >= vault_amount {
+       
         farm.total_active_amount = 0;
         farm.total_pending_amount = 0;
         xmsg!("Withdraw all farm vault (left frozen): {vault_amount}");
@@ -417,6 +593,8 @@ pub fn withdraw_farm(
     let removed_pending_amount: u64 =
         u64_mul_div(farm.total_pending_amount, req_withdraw_amount, vault_amount);
 
+   
+
     farm.total_active_amount -= removed_active_amount;
     farm.total_pending_amount -= removed_pending_amount;
 
@@ -429,3 +607,4 @@ pub fn withdraw_farm(
         farm_to_freeze: false,
     })
 }
+

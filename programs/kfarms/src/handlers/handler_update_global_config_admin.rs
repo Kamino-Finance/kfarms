@@ -1,6 +1,6 @@
-use crate::utils::constraints::check_remaining_accounts;
-use crate::GlobalConfig;
 use anchor_lang::prelude::*;
+
+use crate::{utils::constraints::check_remaining_accounts, GlobalConfig};
 
 pub fn process(ctx: Context<UpdateGlobalConfigAdmin>) -> Result<()> {
     check_remaining_accounts(&ctx)?;

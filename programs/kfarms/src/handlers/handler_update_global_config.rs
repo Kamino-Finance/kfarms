@@ -1,6 +1,8 @@
-use crate::utils::constraints::check_remaining_accounts;
-use crate::{farm_operations, GlobalConfig, GlobalConfigOption};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations, utils::constraints::check_remaining_accounts, GlobalConfig, GlobalConfigOption,
+};
 
 const VALUE_BYTE_ARRAY_LEN: usize = 32;
 

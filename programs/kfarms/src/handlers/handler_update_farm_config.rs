@@ -1,9 +1,11 @@
-use crate::state::FarmConfigOption;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::scope::load_scope_price;
-use crate::FarmError;
-use crate::{farm_operations, FarmState};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations,
+    state::FarmConfigOption,
+    utils::{constraints::check_remaining_accounts, scope::load_scope_price},
+    FarmError, FarmState,
+};
 
 pub fn process(ctx: Context<UpdateFarmConfig>, mode: u16, data: &[u8]) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -13,6 +15,7 @@ pub fn process(ctx: Context<UpdateFarmConfig>, mode: u16, data: &[u8]) -> Result
 
     let mode: FarmConfigOption = mode.try_into().unwrap();
 
+   
     if matches!(
         mode,
         FarmConfigOption::UpdateRewardRps | FarmConfigOption::UpdateRewardScheduleCurvePoints
@@ -39,5 +42,6 @@ pub struct UpdateFarmConfig<'info> {
     #[account(mut)]
     pub farm_state: AccountLoader<'info, FarmState>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 }

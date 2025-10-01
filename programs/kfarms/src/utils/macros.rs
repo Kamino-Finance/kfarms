@@ -35,11 +35,17 @@ macro_rules! xmsg {
 #[cfg(target_arch = "bpf")]
 #[macro_export]
 macro_rules! dbg_msg {
-                () => {
+   
+   
+   
+   
+    () => {
         msg!("[{}:{}]", file!(), line!())
     };
     ($val:expr $(,)?) => {
-                      match $val {
+       
+       
+        match $val {
             tmp => {
                 msg!("[{}:{}] {} = {:#?}",
                     file!(), line!(), stringify!($val), &tmp);
@@ -55,11 +61,17 @@ macro_rules! dbg_msg {
 #[cfg(not(target_arch = "bpf"))]
 #[macro_export]
 macro_rules! dbg_msg {
-                () => {
+   
+   
+   
+   
+    () => {
         println!("[{}:{}]", file!(), line!())
     };
     ($val:expr $(,)?) => {
-                      match $val {
+       
+       
+        match $val {
             tmp => {
                 println!("[{}:{}] {} = {:#?}",
                     file!(), line!(), stringify!($val), &tmp);

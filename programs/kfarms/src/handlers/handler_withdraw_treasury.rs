@@ -1,13 +1,16 @@
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::consts::*;
-use crate::FarmError;
-use crate::{
-    state::GlobalConfig, utils::constraints::token_2022::validate_reward_token_extensions,
-};
-use crate::{token_operations, xmsg};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+};
+
+use crate::{
+    state::GlobalConfig,
+    token_operations,
+    utils::{
+        constraints::{check_remaining_accounts, token_2022::validate_reward_token_extensions},
+        consts::*,
+    },
+    xmsg, FarmError,
 };
 
 pub fn process(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
@@ -67,6 +70,7 @@ pub struct WithdrawTreasury<'info> {
     )]
     pub reward_treasury_vault: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
+    /// CHECK: authority
     #[account(
         seeds = [BASE_SEED_TREASURY_VAULTS_AUTHORITY, global_config.key().as_ref()],
         bump,

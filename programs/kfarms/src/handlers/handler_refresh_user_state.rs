@@ -1,9 +1,11 @@
-use crate::farm_operations;
-use crate::state::TimeUnit;
-use crate::utils::constraints::check_remaining_accounts;
-use crate::utils::scope::load_scope_price;
-use crate::{FarmState, UserState};
 use anchor_lang::prelude::*;
+
+use crate::{
+    farm_operations,
+    state::TimeUnit,
+    utils::{constraints::check_remaining_accounts, scope::load_scope_price},
+    FarmState, UserState,
+};
 
 pub fn process(ctx: Context<RefreshUserState>) -> Result<()> {
     check_remaining_accounts(&ctx)?;
@@ -33,5 +35,6 @@ pub struct RefreshUserState<'info> {
     #[account(mut)]
     pub farm_state: AccountLoader<'info, FarmState>,
 
+    /// CHECK: Farm checks this
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 }

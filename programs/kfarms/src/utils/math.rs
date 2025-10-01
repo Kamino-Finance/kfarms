@@ -13,6 +13,7 @@ mod big_ints {
 use big_ints::U256;
 
 pub fn ten_pow(x: usize) -> u64 {
+   
     const POWERS_OF_TEN: [u64; 20] = [
         1,
         10,
@@ -36,10 +37,12 @@ pub fn ten_pow(x: usize) -> u64 {
         10_000_000_000_000_000_000,
     ];
 
+   
     if x > 19 {
         panic!("The exponent must be between 0 and 19.");
     }
 
+   
     POWERS_OF_TEN[x]
 }
 
@@ -61,6 +64,7 @@ impl TryFrom<U256> for U192 {
     }
 }
 
+
 pub fn full_decimal_mul_div(a: Decimal, b: u64, c: Decimal) -> Decimal {
     let a_scaled: U192 = a.0;
     let c_scaled: U192 = c.0;
@@ -80,6 +84,7 @@ pub fn full_decimal_mul_div(a: Decimal, b: u64, c: Decimal) -> Decimal {
     Decimal::from_scaled_val(result_scaled)
 }
 
+
 pub fn u64_mul_div(a: u64, b: u64, c: u64) -> u64 {
     let a: U128 = a.into();
     let b: U128 = b.into();
@@ -88,3 +93,4 @@ pub fn u64_mul_div(a: u64, b: u64, c: u64) -> u64 {
     let result = numerator / c;
     result.try_into().expect("u64_mul_div overflow")
 }
+
