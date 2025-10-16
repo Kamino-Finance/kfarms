@@ -58,7 +58,15 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
             farm_state.withdrawal_cooldown_period,
             0,
             FarmError::InvalidTransferOwnershipFarmStateWithdrawCooldownPeriod
-        )
+        );
+
+       
+       
+        require_eq!(
+            farm_state.deposit_warmup_period,
+            0,
+            FarmError::InvalidTransferOwnershipFarmStateDepositWarmupPeriod
+        );
     }
 
     if matches!(new_user_account_state, AccountLoaderState::Initialized) {
@@ -115,12 +123,14 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
         farm_operations::withdraw_unstaked_deposits(farm_state, old_user_state, timestamp)?;
 
    
-    let StakeEffects { amount_to_stake } = farm_operations::stake(
+   
+    let StakeEffects { amount_to_stake } = farm_operations::stake_with_cap_check(
         farm_state,
         &mut new_user_state,
         scope_price,
         amount_to_withdraw,
         timestamp,
+        false,
     )?;
 
     require_eq!(
@@ -141,10 +151,13 @@ pub fn process(ctx: Context<TransferOwnership>) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct TransferOwnership<'info> {
-    #[account(mut,
+    #[account(
       address = old_user_state.load()?.owner @ FarmError::InvalidTransferOwnershipOldOwner,
     )]
     pub old_owner: Signer<'info>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
 
    
     pub new_owner: AccountInfo<'info>,
@@ -155,7 +168,7 @@ pub struct TransferOwnership<'info> {
     #[account(init_if_needed,
         seeds = [BASE_SEED_USER_STATE, farm_state.key().as_ref(), new_owner.key().as_ref()],
         bump,
-        payer = old_owner,
+        payer = payer,
         space = SIZE_USER_STATE,
     )]
     pub new_user_state: AccountLoader<'info, UserState>,

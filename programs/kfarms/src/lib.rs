@@ -360,8 +360,12 @@ pub enum FarmError {
    
     #[msg("Invalid transfer ownership stake amount, must be equal to unstaked deposits")]
     InvalidTransferOwnershipStakeAmount,
+   
     #[msg("Invalid authority for transfer ownersip new user state initialization")]
     InvalidTransferOwnershipNewOwner,
+   
+    #[msg("Invalid farm state deposit warmup period for transfer ownership, must be 0 if old user has stake")]
+    InvalidTransferOwnershipFarmStateDepositWarmupPeriod,
 }
 
 impl From<DecimalError> for FarmError {

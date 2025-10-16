@@ -405,13 +405,31 @@ pub fn stake(
     amount: u64,
     current_ts: u64,
 ) -> Result<StakeEffects> {
+    stake_with_cap_check(
+        farm_state,
+        user_state,
+        scope_price,
+        amount,
+        current_ts,
+        true,
+    )
+}
+
+pub fn stake_with_cap_check(
+    farm_state: &mut FarmState,
+    user_state: &mut UserState,
+    scope_price: Option<DatedPrice>,
+    amount: u64,
+    current_ts: u64,
+    check_deposit_cap: bool,
+) -> Result<StakeEffects> {
     xmsg!("farm_operations::stake amount={}", amount);
     refresh_global_rewards(farm_state, scope_price, current_ts)?;
     user_refresh_all_rewards(farm_state, user_state)?;
    
     user_refresh_stake(farm_state, user_state, current_ts)?;
 
-    if !farm_state.can_accept_deposit(amount, scope_price, current_ts)? {
+    if check_deposit_cap && !farm_state.can_accept_deposit(amount, scope_price, current_ts)? {
         return Err(FarmError::DepositCapReached.into());
     }
 
