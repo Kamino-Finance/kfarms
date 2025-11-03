@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    farm_operations, state::UserState, utils::constraints::check_remaining_accounts, FarmState,
+    farm_operations, state::UserState, utils::constraints::check_remaining_accounts, FarmError,
+    FarmState,
 };
 
 pub fn process(ctx: Context<RewardUserOnce>, reward_index: u64, amount: u64) -> Result<()> {
@@ -9,6 +10,12 @@ pub fn process(ctx: Context<RewardUserOnce>, reward_index: u64, amount: u64) -> 
 
     let mut farm_state = ctx.accounts.farm_state.load_mut()?;
     let mut user_state = ctx.accounts.user_state.load_mut()?;
+
+    require_eq!(
+        farm_state.is_reward_user_once_enabled,
+        1,
+        FarmError::RewardUserOnceFeatureDisabled
+    );
 
     farm_operations::reward_user_once(&mut farm_state, &mut user_state, reward_index, amount)?;
 
@@ -18,9 +25,9 @@ pub fn process(ctx: Context<RewardUserOnce>, reward_index: u64, amount: u64) -> 
 #[derive(Accounts)]
 pub struct RewardUserOnce<'info> {
     #[account(mut)]
-    pub farm_admin: Signer<'info>,
+    pub delegate_authority: Signer<'info>,
 
-    #[account(mut, has_one = farm_admin)]
+    #[account(mut, has_one = delegate_authority)]
     pub farm_state: AccountLoader<'info, FarmState>,
 
     #[account(mut,

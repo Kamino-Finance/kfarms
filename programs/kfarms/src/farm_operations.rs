@@ -302,6 +302,31 @@ pub fn update_farm_config(
             xmsg!("prev value {:?}", farm_state.second_delegated_authority);
             farm_state.second_delegated_authority = pubkey;
         }
+        FarmConfigOption::UpdateIsRewardUserOnceEnabled => {
+            require!(farm_state.is_delegated(), FarmError::FarmNotDelegated);
+            let value: bool = BorshDeserialize::try_from_slice(&data[..1])?;
+            xmsg!("farm_operations::update_farm_config is_reward_user_once_enabled={value}",);
+            xmsg!("prev value {:?}", farm_state.is_reward_user_once_enabled);
+            farm_state.is_reward_user_once_enabled = value as u8;
+        }
+        FarmConfigOption::UpdateDelegatedAuthority => {
+            require!(farm_state.is_delegated(), FarmError::FarmNotDelegated);
+            let pubkey: Pubkey = BorshDeserialize::try_from_slice(data)?;
+            require_neq!(
+                pubkey,
+                Pubkey::default(),
+                FarmError::InvalidDelegatedAuthorityUpdate
+            );
+            xmsg!("farm_operations::update_farm_config delegated_authority={pubkey}",);
+            xmsg!("prev value {:?}", farm_state.delegate_authority);
+            farm_state.delegate_authority = pubkey;
+        }
+        FarmConfigOption::UpdateIsHarvestingPermissionless => {
+            let value: bool = BorshDeserialize::try_from_slice(&data[..1])?;
+            xmsg!("farm_operations::update_farm_config is_harvesting_permissionless={value}",);
+            xmsg!("prev value {:?}", farm_state.is_harvesting_permissionless);
+            farm_state.is_harvesting_permissionless = value as u8;
+        }
     };
     Ok(())
 }

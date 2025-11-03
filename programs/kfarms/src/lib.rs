@@ -280,7 +280,7 @@ pub enum FarmError {
     #[msg("Authority must match farm delegate authority")]
     AuthorityFarmDelegateMissmatch,
    
-    #[msg("Farm not delegated, can not set stake")]
+    #[msg("Farm not delegated, can not complete operation")]
     FarmNotDelegated,
    
     #[msg("Operation not allowed for delegated farm")]
@@ -366,6 +366,18 @@ pub enum FarmError {
    
     #[msg("Invalid farm state deposit warmup period for transfer ownership, must be 0 if old user has stake")]
     InvalidTransferOwnershipFarmStateDepositWarmupPeriod,
+   
+    #[msg("Reward User Once feature is disabled")]
+    RewardUserOnceFeatureDisabled,
+   
+    #[msg("Can not set delegate_authority to default pubkey - farm is delegated")]
+    InvalidDelegatedAuthorityUpdate,
+   
+    #[msg("User token account owner does not match user state owner")]
+    UserTokenAccountOwnerMismatch,
+   
+    #[msg("Harvesting is not permissionless, payer does not match user state owner")]
+    HarvestingNotPermissionlessPayerMismatch,
 }
 
 impl From<DecimalError> for FarmError {

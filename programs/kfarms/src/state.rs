@@ -99,7 +99,12 @@ pub struct FarmState {
 
     pub is_farm_delegated: u8,
 
-    pub _padding0: [u8; 5],
+
+    pub is_reward_user_once_enabled: u8,
+
+    pub is_harvesting_permissionless: u8,
+
+    pub _padding0: [u8; 3],
 
 
 
@@ -242,7 +247,10 @@ impl Default for FarmState {
             is_farm_frozen: 0,
             is_farm_delegated: 0,
 
-            _padding0: [0; 5],
+            is_reward_user_once_enabled: 0,
+            is_harvesting_permissionless: 0,
+
+            _padding0: [0; 3],
 
            
             withdraw_authority: Pubkey::default(),
@@ -669,6 +677,9 @@ pub enum FarmConfigOption {
     UpdateDelegatedRpsAdmin,
     UpdateVaultId,
     UpdateExtraDelegatedAuthority,
+    UpdateIsRewardUserOnceEnabled,
+    UpdateDelegatedAuthority,
+    UpdateIsHarvestingPermissionless,
 }
 
 #[derive(
