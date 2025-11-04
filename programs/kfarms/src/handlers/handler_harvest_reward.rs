@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
@@ -69,7 +71,7 @@ pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
         token_operations::transfer_2022_from_vault(
             reward_user,
             signer_seeds,
-            &ctx.accounts.user_reward_ata.to_account_info(),
+            &ctx.accounts.user_reward_token_account.to_account_info(),
             &ctx.accounts.rewards_vault.to_account_info(),
             &ctx.accounts.farm_vaults_authority,
             &ctx.accounts.token_program,
@@ -95,11 +97,12 @@ pub fn process(ctx: Context<HarvestReward>, reward_index: u64) -> Result<()> {
 #[derive(Accounts)]
 #[instruction(reward_index: u64)]
 pub struct HarvestReward<'info> {
-    #[account(mut)]
-    pub owner: Signer<'info>,
+    #[account(mut,
+        constraint = check_owner_harvesting_permissionless(payer.key(), farm_state.load()?.deref(), user_state.load()?.deref()) @ FarmError::HarvestingNotPermissionlessPayerMismatch,
+    )]
+    pub payer: Signer<'info>,
 
     #[account(mut,
-        has_one = owner,
         has_one = farm_state,
     )]
     pub user_state: AccountLoader<'info, UserState>,
@@ -117,11 +120,11 @@ pub struct HarvestReward<'info> {
 
    
     #[account(mut,
-        has_one = owner,
-        constraint = user_reward_ata.mint == reward_mint.key() @ FarmError::UserAtaRewardVaultMintMissmatch,
+        token::authority = user_state.load()?.owner,
+        token::mint = reward_mint.key(),
         token::token_program = token_program
     )]
-    pub user_reward_ata: Box<InterfaceAccount<'info, TokenAccountInterface>>,
+    pub user_reward_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut,
         seeds = [BASE_SEED_REWARD_VAULT, farm_state.key().as_ref(), rewards_vault.mint.as_ref()],
@@ -155,4 +158,16 @@ pub struct HarvestReward<'info> {
     pub scope_prices: Option<AccountLoader<'info, scope::OraclePrices>>,
 
     pub token_program: Interface<'info, TokenInterface>,
+}
+
+pub fn check_owner_harvesting_permissionless(
+    payer: Pubkey,
+    farm_state: &FarmState,
+    user_state: &UserState,
+) -> bool {
+    if farm_state.is_harvesting_permissionless == 0 {
+        user_state.owner == payer
+    } else {
+        true
+    }
 }
