@@ -395,6 +395,7 @@ pub fn initialize_user(
 
     user_state.rewards_tally_scaled = [0; MAX_REWARDS_TOKENS];
     user_state.rewards_issued_unclaimed = [0; MAX_REWARDS_TOKENS];
+    user_state.rewards_issued_cumulative = [0; MAX_REWARDS_TOKENS];
     user_state.active_stake_scaled = 0;
     user_state.last_claim_ts = [ts; MAX_REWARDS_TOKENS];
 
@@ -661,6 +662,8 @@ pub fn user_refresh_reward(
     user_state.set_rewards_tally_decimal(reward_index, new_reward_tally);
 
     user_state.rewards_issued_unclaimed[reward_index] += reward;
+    user_state.rewards_issued_cumulative[reward_index] =
+        user_state.rewards_issued_cumulative[reward_index].saturating_add(reward);
 
     Ok(())
 }
@@ -733,8 +736,13 @@ pub fn reward_user_once(
     amount: u64,
 ) -> Result<()> {
     farm_state.reward_infos[reward_index as usize].rewards_issued_unclaimed += amount;
-    farm_state.reward_infos[reward_index as usize].rewards_issued_cumulative += amount;
+    farm_state.reward_infos[reward_index as usize].rewards_issued_cumulative = farm_state
+        .reward_infos[reward_index as usize]
+        .rewards_issued_cumulative
+        .saturating_add(amount);
     user_state.rewards_issued_unclaimed[reward_index as usize] += amount;
+    user_state.rewards_issued_cumulative[reward_index as usize] =
+        user_state.rewards_issued_cumulative[reward_index as usize].saturating_add(amount);
     Ok(())
 }
 

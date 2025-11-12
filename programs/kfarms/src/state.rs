@@ -534,7 +534,13 @@ pub struct UserState {
 
     pub last_stake_ts: u64,
 
-    pub _padding_1: [u64; 50],
+
+
+
+
+    pub rewards_issued_cumulative: [u64; MAX_REWARDS_TOKENS],
+
+    pub _padding_1: [u64; 40],
 }
 
 impl UserState {
@@ -593,7 +599,9 @@ impl Default for UserState {
             bump: 0,
             delegatee: Pubkey::default(),
             last_stake_ts: 0,
-            _padding_1: [0; 50],
+
+            rewards_issued_cumulative: [0; MAX_REWARDS_TOKENS],
+            _padding_1: [0; 40],
         }
     }
 }

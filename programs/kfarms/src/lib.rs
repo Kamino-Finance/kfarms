@@ -88,8 +88,14 @@ pub mod farms {
         ctx: Context<RewardUserOnce>,
         reward_index: u64,
         amount: u64,
+        expected_reward_issued_unclaimed: u64,
     ) -> Result<()> {
-        handler_reward_user_once::process(ctx, reward_index, amount)
+        handler_reward_user_once::process(
+            ctx,
+            reward_index,
+            amount,
+            expected_reward_issued_unclaimed,
+        )
     }
 
     pub fn refresh_farm(ctx: Context<RefreshFarm>) -> Result<()> {
@@ -378,6 +384,9 @@ pub enum FarmError {
    
     #[msg("Harvesting is not permissionless, payer does not match user state owner")]
     HarvestingNotPermissionlessPayerMismatch,
+   
+    #[msg("Current reward issued unclaimed does not match expected value")]
+    CurrentRewardIssuedUnclaimedMismatch,
 }
 
 impl From<DecimalError> for FarmError {
