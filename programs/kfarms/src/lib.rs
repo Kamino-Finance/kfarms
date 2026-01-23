@@ -168,6 +168,10 @@ pub mod farms {
         handler_update_second_delegated_authority::process(ctx)
     }
 
+    pub fn close_empty_user_state(ctx: Context<CloseEmptyUserState>) -> Result<()> {
+        handler_close_empty_user_state::process(ctx)
+    }
+
     pub fn idl_missing_types(
         _ctx: Context<UpdateGlobalConfig>,
         _global_config_option_kind: GlobalConfigOption,
@@ -387,6 +391,30 @@ pub enum FarmError {
    
     #[msg("Current reward issued unclaimed does not match expected value")]
     CurrentRewardIssuedUnclaimedMismatch,
+   
+    #[msg("Cannot close user state because staked amount is non-zero")]
+    CannotCloseUserStateStakeNonZero,
+   
+    #[msg("Cannot close user state because there are pending unstake requests")]
+    CannotCloseUserStatePendingUnstakes,
+   
+    #[msg("Cannot close user state because there are pending deposit requests")]
+    CannotCloseUserStatePendingDeposits,
+   
+    #[msg("Cannot close user state because there are unharvested rewards")]
+    CannotCloseUserStateUnharvestedRewards,
+   
+    #[msg("Cannot close user state because signer is not the owner")]
+    CannotCloseUserStateSignerNotOwner,
+   
+    #[msg("Cannot close user state (delegated) because signer is not the delegate authority")]
+    CannotCloseUserStateDelegatedSignerNotDelegateAuthority,
+   
+    #[msg("Cannot close user state because rent receiver is not the owner")]
+    CannotCloseUserStateRentReceiverNotOwner,
+   
+    #[msg("Cannot close user state (delegated) because rent receiver is not the admin")]
+    CannotCloseUserStateDelegatedRentReceiverNotAdmin,
 }
 
 impl From<DecimalError> for FarmError {
