@@ -1,4 +1,5 @@
 pub mod handler_add_reward;
+pub mod handler_close_empty_user_state;
 pub mod handler_deposit_to_farm_vault;
 pub mod handler_harvest_reward;
 pub mod handler_initialize_farm;
@@ -25,6 +26,7 @@ pub mod handler_withdraw_treasury;
 pub mod handler_withdraw_unstaked_deposits;
 
 pub use handler_add_reward::*;
+pub use handler_close_empty_user_state::*;
 pub use handler_deposit_to_farm_vault::*;
 pub use handler_harvest_reward::*;
 pub use handler_initialize_farm::*;

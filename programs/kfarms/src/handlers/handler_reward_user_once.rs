@@ -14,7 +14,8 @@ pub fn process(
     ctx: Context<RewardUserOnce>,
     reward_index: u64,
     amount: u64,
-    expected_reward_issued_unclaimed: u64,
+    expected_rewards_issued_cumulative: u64,
+    user_state_id: u64,
 ) -> Result<()> {
     check_remaining_accounts(&ctx)?;
 
@@ -28,9 +29,15 @@ pub fn process(
     );
 
     require_eq!(
-        user_state.rewards_issued_unclaimed[reward_index as usize],
-        expected_reward_issued_unclaimed,
-        FarmError::CurrentRewardIssuedUnclaimedMismatch
+        user_state.rewards_issued_cumulative[reward_index as usize],
+        expected_rewards_issued_cumulative,
+        FarmError::RewardsIssuedCumulativeMismatch
+    );
+
+    require_eq!(
+        user_state.user_id,
+        user_state_id,
+        FarmError::UserStateIdMismatch
     );
 
     farm_operations::reward_user_once(&mut farm_state, &mut user_state, reward_index, amount)?;
