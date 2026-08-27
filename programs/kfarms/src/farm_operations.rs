@@ -735,14 +735,21 @@ pub fn reward_user_once(
     reward_index: u64,
     amount: u64,
 ) -> Result<()> {
-    farm_state.reward_infos[reward_index as usize].rewards_issued_unclaimed += amount;
-    farm_state.reward_infos[reward_index as usize].rewards_issued_cumulative = farm_state
-        .reward_infos[reward_index as usize]
+    let index: usize = reward_index.try_into().unwrap();
+   
+   
+    require!(
+        user_state.rewards_issued_cumulative[index] != u64::MAX,
+        FarmError::RewardsIssuedCumulativeAtMax
+    );
+
+    farm_state.reward_infos[index].rewards_issued_unclaimed += amount;
+    farm_state.reward_infos[index].rewards_issued_cumulative = farm_state.reward_infos[index]
         .rewards_issued_cumulative
         .saturating_add(amount);
-    user_state.rewards_issued_unclaimed[reward_index as usize] += amount;
-    user_state.rewards_issued_cumulative[reward_index as usize] =
-        user_state.rewards_issued_cumulative[reward_index as usize].saturating_add(amount);
+    user_state.rewards_issued_unclaimed[index] += amount;
+    user_state.rewards_issued_cumulative[index] =
+        user_state.rewards_issued_cumulative[index].saturating_add(amount);
     Ok(())
 }
 

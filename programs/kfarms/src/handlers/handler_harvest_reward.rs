@@ -1,8 +1,11 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{
-    Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+use anchor_spl::{
+    associated_token::get_associated_token_address_with_program_id,
+    token_interface::{
+        Mint as MintInterface, TokenAccount as TokenAccountInterface, TokenInterface,
+    },
 };
 
 use crate::{
@@ -118,11 +121,17 @@ pub struct HarvestReward<'info> {
 
     pub reward_mint: Box<InterfaceAccount<'info, MintInterface>>,
 
-   
     #[account(mut,
         token::authority = user_state.load()?.owner,
         token::mint = reward_mint.key(),
-        token::token_program = token_program
+        token::token_program = token_program,
+        constraint = check_user_reward_token_account(
+            payer.key(),
+            &user_state.load()?.owner,
+            reward_mint.key(),
+            token_program.key(),
+            user_reward_token_account.key(),
+        ) @ FarmError::UserRewardTokenAccountMustBeAta
     )]
     pub user_reward_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
@@ -169,5 +178,21 @@ pub fn check_owner_harvesting_permissionless(
         user_state.owner == payer
     } else {
         true
+    }
+}
+
+pub fn check_user_reward_token_account(
+    payer: Pubkey,
+    owner: &Pubkey,
+    mint: Pubkey,
+    token_program: Pubkey,
+    user_reward_token_account: Pubkey,
+) -> bool {
+    if payer == *owner {
+        true
+    } else {
+        let expected_ata =
+            get_associated_token_address_with_program_id(owner, &mint, &token_program);
+        user_reward_token_account == expected_ata
     }
 }

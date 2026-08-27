@@ -88,13 +88,15 @@ pub mod farms {
         ctx: Context<RewardUserOnce>,
         reward_index: u64,
         amount: u64,
-        expected_reward_issued_unclaimed: u64,
+        expected_rewards_issued_cumulative: u64,
+        user_state_id: u64,
     ) -> Result<()> {
         handler_reward_user_once::process(
             ctx,
             reward_index,
             amount,
-            expected_reward_issued_unclaimed,
+            expected_rewards_issued_cumulative,
+            user_state_id,
         )
     }
 
@@ -166,6 +168,10 @@ pub mod farms {
         ctx: Context<UpdateSecondDelegatedAuthority>,
     ) -> Result<()> {
         handler_update_second_delegated_authority::process(ctx)
+    }
+
+    pub fn close_empty_user_state(ctx: Context<CloseEmptyUserState>) -> Result<()> {
+        handler_close_empty_user_state::process(ctx)
     }
 
     pub fn idl_missing_types(
@@ -385,8 +391,41 @@ pub enum FarmError {
     #[msg("Harvesting is not permissionless, payer does not match user state owner")]
     HarvestingNotPermissionlessPayerMismatch,
    
-    #[msg("Current reward issued unclaimed does not match expected value")]
-    CurrentRewardIssuedUnclaimedMismatch,
+    #[msg("Rewards issued cumulative does not match expected value")]
+    RewardsIssuedCumulativeMismatch,
+   
+    #[msg("Cannot close user state because staked amount is non-zero")]
+    CannotCloseUserStateStakeNonZero,
+   
+    #[msg("Cannot close user state because there are pending unstake requests")]
+    CannotCloseUserStatePendingUnstakes,
+   
+    #[msg("Cannot close user state because there are pending deposit requests")]
+    CannotCloseUserStatePendingDeposits,
+   
+    #[msg("Cannot close user state because there are unharvested rewards")]
+    CannotCloseUserStateUnharvestedRewards,
+   
+    #[msg("Cannot close user state because signer is not the owner")]
+    CannotCloseUserStateSignerNotOwner,
+   
+    #[msg("Cannot close user state (delegated) because signer is not the delegate authority")]
+    CannotCloseUserStateDelegatedSignerNotDelegateAuthority,
+   
+    #[msg("Cannot close user state because rent receiver is not the owner")]
+    CannotCloseUserStateRentReceiverNotOwner,
+   
+    #[msg("Cannot close user state (delegated) because rent receiver is not the admin")]
+    CannotCloseUserStateDelegatedRentReceiverNotAdmin,
+   
+    #[msg("User reward token account must be an ATA when payer is not the owner")]
+    UserRewardTokenAccountMustBeAta,
+   
+    #[msg("Cannot reward user because rewards_issued_cumulative has reached maximum value")]
+    RewardsIssuedCumulativeAtMax,
+   
+    #[msg("User state user id does not match expected value")]
+    UserStateIdMismatch,
 }
 
 impl From<DecimalError> for FarmError {
